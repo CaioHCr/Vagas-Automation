@@ -68,6 +68,8 @@ if "confirm_clear" not in st.session_state:
     st.session_state.confirm_clear = False
 
 SCHEDULER_PEND_FILE = "_scheduler_pending.txt"
+SCHEDULER_TIMES = []
+SCHEDULER_THREAD_STARTED = False
 
 # ---------------------------------------------------------------------------
 # Scheduler: thread de fundo + gatilho visual na pagina
@@ -114,7 +116,7 @@ def _loop_agendador():
             if os.path.exists("_scheduler_state.json"):
                 with open("_scheduler_state.json") as f:
                     state = json.load(f)
-            for t in st.session_state.scheduler_times:
+            for t in SCHEDULER_TIMES:
                 h, m = map(int, t.split(":"))
                 key = f"{hoje}_{t}"
                 minutos_agora = now.hour * 60 + now.minute
@@ -130,10 +132,14 @@ def _loop_agendador():
         time.sleep(30)
 
 def _iniciar_agendador(times):
-    st.session_state.scheduler_times = times
+    global SCHEDULER_TIMES, SCHEDULER_THREAD_STARTED
+    SCHEDULER_TIMES = list(times)
+    st.session_state.scheduler_times = list(times)
     st.session_state.scheduler_started = True
-    t = threading.Thread(target=_loop_agendador, daemon=True)
-    t.start()
+    if not SCHEDULER_THREAD_STARTED:
+        t = threading.Thread(target=_loop_agendador, daemon=True)
+        t.start()
+        SCHEDULER_THREAD_STARTED = True
 
 def _check_scheduler_pendente():
     if os.path.exists(SCHEDULER_PEND_FILE):
@@ -261,6 +267,7 @@ if st.session_state.running_extraction:
 # ---------------------------------------------------------------------------
 if st.session_state.scheduler_started and not st.session_state.running_extraction:
     _check_scheduler_pendente()
+    st.components.v1.html("<script>setTimeout(function(){window.location.reload();}, 5000);</script>", height=0)
 
 # ---------------------------------------------------------------------------
 # Extraction report banner
@@ -378,6 +385,8 @@ with st.sidebar:
         st.caption(f"Agendador ativo nos horarios: {', '.join(st.session_state.scheduler_times)}")
 
     if st.button("PARAR AGENDADOR", use_container_width=True):
+        global SCHEDULER_TIMES
+        SCHEDULER_TIMES = []
         st.session_state.scheduler_started = False
         st.session_state.scheduler_times = []
         st.rerun()
