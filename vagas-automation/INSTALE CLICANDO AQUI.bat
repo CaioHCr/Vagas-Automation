@@ -1,26 +1,15 @@
 @echo off
-:: Auto-unblock (remove Mark of the Web do Windows)
+:: Auto-unblock (remove Mark of the Web)
 powershell -NoProfile -Command "Unblock-File -Path '%~f0'" >nul 2>&1
 
-:: Garantir que a janela NUNCA feche: re-invoca com cmd /k
+cd /d "%~dp0" 2>nul
+if errorlevel 1 goto :erro_cd
+
+:: Re-invocar com cmd /k para manter janela aberta mesmo em caso de erro
 if "%1"=="" (
     title VAGAS - INSTALACAO
-    cmd /k "%~f0 _inner"
-    exit /b
-)
-
-cd /d "%~dp0"
-if errorlevel 1 (
-    echo.
-    echo [ERRO FATAL] Nao foi possivel acessar:
-    echo %~dp0
-    echo.
-    echo Causa comum: Windows 11 bloqueou o arquivo baixado.
-    echo Solucao: Clique direito no arquivo > Propriedades >
-    echo          Marque "Desbloquear" > Aplicar.
-    echo.
-    pause
-    exit /b 1
+    cmd /k "%~f0" _inner_
+    exit
 )
 
 title Vagas Automation Setup
@@ -249,4 +238,16 @@ echo.
 echo   Ou clique duas vezes em run.bat
 echo.
 echo   Pressione qualquer tecla para sair...
+pause
+exit /b 0
+
+:erro_cd
+echo.
+echo [ERRO FATAL] Nao foi possivel acessar o diretorio:
+echo %~dp0
+echo.
+echo Isso pode ocorrer se o arquivo foi baixado (bloqueado pelo Windows).
+echo Solucao: Clique direito no arquivo .bat > Propriedades >
+echo          Marque "Desbloquear" > Aplicar > OK.
+echo.
 pause
