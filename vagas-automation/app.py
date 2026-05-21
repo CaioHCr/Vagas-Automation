@@ -385,7 +385,6 @@ with st.sidebar:
         st.caption(f"Agendador ativo nos horarios: {', '.join(st.session_state.scheduler_times)}")
 
     if st.button("PARAR AGENDADOR", use_container_width=True):
-        global SCHEDULER_TIMES
         SCHEDULER_TIMES = []
         st.session_state.scheduler_started = False
         st.session_state.scheduler_times = []
