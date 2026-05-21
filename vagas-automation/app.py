@@ -1,12 +1,9 @@
 import streamlit as st
 import os
 import json
-import threading
-import time as time_module
 import pandas as pd
 from datetime import datetime
 from dotenv import load_dotenv, set_key
-import schedule
 from core.database import get_all_vagas, get_visible_vagas, update_status, update_vaga_analysis, hide_all_vagas, clear_all_vagas, init_db
 from core.scraper_gupy import fetch_gupy_jobs
 from core.scraper_ln import fetch_linkedin_jobs_http
@@ -68,59 +65,36 @@ if "extraction_report" not in st.session_state:
 if "confirm_clear" not in st.session_state:
     st.session_state.confirm_clear = False
 
+SCHEDULER_STATE_FILE = "_scheduler_state.json"
+
 # ---------------------------------------------------------------------------
-# CRON daemon
+# Scheduler: checa ao carregar a pagina se deve rodar com UI
 # ---------------------------------------------------------------------------
-def _run_pipeline():
-    try:
-        load_dotenv(".env", override=True)
-        roles = os.getenv("CARGOS_ALVO", "")
-        location = os.getenv("LOCALIZACAO_FILTRO", "Brasil")
-        from core.database import get_all_vagas
-        _antes = len(get_all_vagas())
-        config_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "config", "termos_busca.json")
+def _check_scheduler():
+    if not st.session_state.scheduler_started:
+        return
+    if st.session_state.running_extraction:
+        return
+    now = datetime.now()
+    today_str = now.strftime("%Y-%m-%d")
+    state = {}
+    if os.path.exists(SCHEDULER_STATE_FILE):
         try:
-            with open(config_path, "r") as f:
-                termos_config = json.load(f)
+            with open(SCHEDULER_STATE_FILE) as f:
+                state = json.load(f)
         except Exception:
-            termos_config = {"consultorias_ids": []}
-        consultorias_str = ",".join(termos_config.get("consultorias_ids", []))
-        fetch_linkedin_jobs_http(roles=roles, location_filter=location, lista_empresas=None)
-        fetch_gupy_jobs(roles=roles, location_filter=location)
-        if consultorias_str:
-            fetch_linkedin_jobs_http(roles=roles, location_filter=location, lista_empresas=consultorias_str)
-
-        email_user = os.getenv("EMAIL_USUARIO", "")
-        email_pass = os.getenv("EMAIL_SENHA_APP", "")
-        if email_user and email_pass:
-            import pandas as pd
-            all_v = get_all_vagas()
-            df = pd.DataFrame(all_v)
-            if not df.empty:
-                df_novas = df[df["status_candidatura"] == "Novas"]
-                if not df_novas.empty:
-                    delta = len(all_v) - _antes
-                    enviar_resumo_email(df_novas, email_user, email_pass, delta_novas=delta, total_sistema=len(all_v))
-        from core.logger import log_info
-        log_info(f"[SCHEDULER] Pipeline executado em {datetime.now().strftime('%d/%m/%Y %H:%M')}")
-        with open("_scheduler_last_run.txt", "w") as f:
-            f.write(datetime.now().strftime("%d/%m/%Y %H:%M"))
-    except Exception as e:
-        from core.logger import log_error
-        log_error(f"[SCHEDULER] Erro: {e}")
-
-def _scheduler_loop():
-    while True:
-        schedule.run_pending()
-        time_module.sleep(30)
-
-def _start_scheduler(times):
-    schedule.clear()
-    for t in times:
-        schedule.every().day.at(t).do(_run_pipeline)
-    if times:
-        t = threading.Thread(target=_scheduler_loop, daemon=True)
-        t.start()
+            state = {}
+    for t in st.session_state.scheduler_times:
+        h, m = map(int, t.split(":"))
+        key = f"{today_str}_{t}"
+        minutes_since_midnight = now.hour * 60 + now.minute
+        slot_minutes = h * 60 + m
+        if minutes_since_midnight >= slot_minutes and not state.get(key):
+            st.session_state.running_extraction = True
+            state[key] = True
+            with open(SCHEDULER_STATE_FILE, "w") as f:
+                json.dump(state, f)
+            break
 
 # ---------------------------------------------------------------------------
 # Header
@@ -153,7 +127,10 @@ def _snapshot_counts():
         "gupy": sum(1 for x in v if x.get("plataforma") == "Gupy"),
     }
 
-if st.session_state.running_extraction:
+# ---------------------------------------------------------------------------
+# Pipeline com UI
+# ---------------------------------------------------------------------------
+def _rodar_com_ui():
     load_dotenv(".env", override=True)
     roles = os.getenv("CARGOS_ALVO", "")
     location = os.getenv("LOCALIZACAO_FILTRO", "Brasil")
@@ -189,7 +166,6 @@ if st.session_state.running_extraction:
         else:
             status.write("[AVISO] Nenhuma consultoria configurada em config/termos_busca.json.")
 
-        # Relatorio e email
         email_user = os.getenv("EMAIL_USUARIO", "")
         email_pass = os.getenv("EMAIL_SENHA_APP", "")
         _depois = _snapshot_counts()
@@ -226,7 +202,18 @@ if st.session_state.running_extraction:
         status.update(label="EXTRACAO CONCLUIDA -- todas as 3 fases finalizadas.", state="complete")
 
     st.session_state.running_extraction = False
+    with open("_scheduler_last_run.txt", "w") as f:
+        f.write(datetime.now().strftime("%d/%m/%Y %H:%M"))
+
+if st.session_state.running_extraction:
+    _rodar_com_ui()
     st.rerun()
+
+# ---------------------------------------------------------------------------
+# Scheduler check (roda ao carregar a pagina)
+# ---------------------------------------------------------------------------
+if st.session_state.scheduler_started and not st.session_state.running_extraction:
+    _check_scheduler()
 
 # ---------------------------------------------------------------------------
 # Extraction report banner
@@ -337,7 +324,6 @@ with st.sidebar:
     cron_times = [t1.strftime("%H:%M"), t2.strftime("%H:%M")]
 
     if st.button("ATIVAR AGENDADOR", use_container_width=True):
-        _start_scheduler(cron_times)
         st.session_state.scheduler_times = cron_times
         st.session_state.scheduler_started = True
         st.rerun()
@@ -346,7 +332,6 @@ with st.sidebar:
         st.caption(f"Agendador ativo nos horarios: {', '.join(st.session_state.scheduler_times)}")
 
     if st.button("PARAR AGENDADOR", use_container_width=True):
-        schedule.clear()
         st.session_state.scheduler_started = False
         st.session_state.scheduler_times = []
         st.rerun()

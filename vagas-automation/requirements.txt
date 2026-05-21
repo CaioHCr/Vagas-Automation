@@ -7,4 +7,3 @@ openai>=1.0
 pydantic>=2.0
 pydantic-settings>=2.0
 beautifulsoup4>=4.12
-schedule>=1.2

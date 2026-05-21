@@ -18,6 +18,7 @@ Captura de tela*
 vagas-automation/.gitignore
 
 _scheduler_last_run.txt
+_scheduler_state.json
 
 # OS
 .DS_Store
