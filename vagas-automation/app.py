@@ -316,6 +316,9 @@ with st.sidebar:
     st.markdown("---")
     st.markdown("<h3 style='color: #ffaa00;'>AGENDAMENTO (CRON)</h3>", unsafe_allow_html=True)
 
+    st.caption("Recomendado: feche o painel e use INICIE O AGENDADOR.bat")
+    st.caption("para um scheduler standalone que nao depende do navegador.")
+
     t1 = st.time_input("Horario 1", value=datetime.strptime("06:00", "%H:%M").time(), key="cron_t1")
     t2 = st.time_input("Horario 2", value=datetime.strptime("18:00", "%H:%M").time(), key="cron_t2")
 
