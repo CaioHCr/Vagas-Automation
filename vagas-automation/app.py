@@ -72,34 +72,42 @@ if "confirm_clear" not in st.session_state:
 # CRON daemon
 # ---------------------------------------------------------------------------
 def _run_pipeline():
-    load_dotenv(".env", override=True)
-    roles = os.getenv("CARGOS_ALVO", "")
-    location = os.getenv("LOCALIZACAO_FILTRO", "Brasil")
-    from core.database import get_all_vagas
-    _antes = len(get_all_vagas())
-    config_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "config", "termos_busca.json")
     try:
-        with open(config_path, "r") as f:
-            termos_config = json.load(f)
-    except Exception:
-        termos_config = {"consultorias_ids": []}
-    consultorias_str = ",".join(termos_config.get("consultorias_ids", []))
-    fetch_linkedin_jobs_http(roles=roles, location_filter=location, lista_empresas=None)
-    fetch_gupy_jobs(roles=roles, location_filter=location)
-    if consultorias_str:
-        fetch_linkedin_jobs_http(roles=roles, location_filter=location, lista_empresas=consultorias_str)
+        load_dotenv(".env", override=True)
+        roles = os.getenv("CARGOS_ALVO", "")
+        location = os.getenv("LOCALIZACAO_FILTRO", "Brasil")
+        from core.database import get_all_vagas
+        _antes = len(get_all_vagas())
+        config_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "config", "termos_busca.json")
+        try:
+            with open(config_path, "r") as f:
+                termos_config = json.load(f)
+        except Exception:
+            termos_config = {"consultorias_ids": []}
+        consultorias_str = ",".join(termos_config.get("consultorias_ids", []))
+        fetch_linkedin_jobs_http(roles=roles, location_filter=location, lista_empresas=None)
+        fetch_gupy_jobs(roles=roles, location_filter=location)
+        if consultorias_str:
+            fetch_linkedin_jobs_http(roles=roles, location_filter=location, lista_empresas=consultorias_str)
 
-    email_user = os.getenv("EMAIL_USUARIO", "")
-    email_pass = os.getenv("EMAIL_SENHA_APP", "")
-    if email_user and email_pass:
-        import pandas as pd
-        all_v = get_all_vagas()
-        df = pd.DataFrame(all_v)
-        if not df.empty:
-            df_novas = df[df["status_candidatura"] == "Novas"]
-            if not df_novas.empty:
-                delta = len(all_v) - _antes
-                enviar_resumo_email(df_novas, email_user, email_pass, delta_novas=delta, total_sistema=len(all_v))
+        email_user = os.getenv("EMAIL_USUARIO", "")
+        email_pass = os.getenv("EMAIL_SENHA_APP", "")
+        if email_user and email_pass:
+            import pandas as pd
+            all_v = get_all_vagas()
+            df = pd.DataFrame(all_v)
+            if not df.empty:
+                df_novas = df[df["status_candidatura"] == "Novas"]
+                if not df_novas.empty:
+                    delta = len(all_v) - _antes
+                    enviar_resumo_email(df_novas, email_user, email_pass, delta_novas=delta, total_sistema=len(all_v))
+        from core.logger import log_info
+        log_info(f"[SCHEDULER] Pipeline executado em {datetime.now().strftime('%d/%m/%Y %H:%M')}")
+        with open("_scheduler_last_run.txt", "w") as f:
+            f.write(datetime.now().strftime("%d/%m/%Y %H:%M"))
+    except Exception as e:
+        from core.logger import log_error
+        log_error(f"[SCHEDULER] Erro: {e}")
 
 def _scheduler_loop():
     while True:
@@ -316,8 +324,12 @@ with st.sidebar:
     st.markdown("---")
     st.markdown("<h3 style='color: #ffaa00;'>AGENDAMENTO (CRON)</h3>", unsafe_allow_html=True)
 
-    st.caption("Recomendado: feche o painel e use INICIE O AGENDADOR.bat")
-    st.caption("para um scheduler standalone que nao depende do navegador.")
+    _last_run = ""
+    if os.path.exists("_scheduler_last_run.txt"):
+        with open("_scheduler_last_run.txt") as f:
+            _last_run = f.read().strip()
+    if _last_run:
+        st.caption(f"Ultima execucao: {_last_run}")
 
     t1 = st.time_input("Horario 1", value=datetime.strptime("06:00", "%H:%M").time(), key="cron_t1")
     t2 = st.time_input("Horario 2", value=datetime.strptime("18:00", "%H:%M").time(), key="cron_t2")

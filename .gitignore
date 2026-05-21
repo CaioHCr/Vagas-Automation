@@ -17,6 +17,8 @@ Job Feed Unificado*
 Captura de tela*
 vagas-automation/.gitignore
 
+_scheduler_last_run.txt
+
 # OS
 .DS_Store
 Thumbs.db
