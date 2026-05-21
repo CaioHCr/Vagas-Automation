@@ -4,7 +4,7 @@ import json
 import threading
 import time
 import pandas as pd
-from datetime import datetime
+from datetime import datetime, timedelta
 from dotenv import load_dotenv, set_key
 from core.database import get_all_vagas, get_visible_vagas, update_status, update_vaga_analysis, hide_all_vagas, clear_all_vagas, init_db
 from core.scraper_gupy import fetch_gupy_jobs
@@ -59,9 +59,9 @@ STATUS_OPTIONS = ["Novas", "Vou Aplicar", "Aplicado", "Excluir"]
 if "running_extraction" not in st.session_state:
     st.session_state.running_extraction = False
 if "scheduler_times" not in st.session_state:
-    st.session_state.scheduler_times = []
+    st.session_state.scheduler_times = ["06:00", "18:00"]
 if "scheduler_started" not in st.session_state:
-    st.session_state.scheduler_started = False
+    st.session_state.scheduler_started = True
 if "extraction_report" not in st.session_state:
     st.session_state.extraction_report = None
 if "confirm_clear" not in st.session_state:
@@ -146,6 +146,9 @@ def _iniciar_agendador(times):
         t = threading.Thread(target=_loop_agendador, daemon=True)
         t.start()
         SCHEDULER_THREAD_STARTED = True
+
+if st.session_state.scheduler_started and not SCHEDULER_THREAD_STARTED:
+    _iniciar_agendador(st.session_state.scheduler_times)
 
 def _check_scheduler_pendente():
     if os.path.exists(SCHEDULER_PEND_FILE):
@@ -378,8 +381,8 @@ with st.sidebar:
     if _last_run:
         st.caption(f"Ultima execucao: {_last_run}")
 
-    t1 = st.time_input("Horario 1", value=datetime.strptime("06:00", "%H:%M").time(), key="cron_t1")
-    t2 = st.time_input("Horario 2", value=datetime.strptime("18:00", "%H:%M").time(), key="cron_t2")
+    t1 = st.time_input("Horario 1", value=datetime.strptime("06:00", "%H:%M").time(), step=timedelta(minutes=10), key="cron_t1")
+    t2 = st.time_input("Horario 2", value=datetime.strptime("18:00", "%H:%M").time(), step=timedelta(minutes=10), key="cron_t2")
 
     cron_times = [t1.strftime("%H:%M"), t2.strftime("%H:%M")]
 
