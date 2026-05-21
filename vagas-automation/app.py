@@ -288,8 +288,8 @@ with st.sidebar:
     loc_map = termos_config.get("localizacoes_disponiveis", {"Brasil": "106057199"})
     active_geo = termos_config.get("localizacoes_ids", ["106057199"])
     geo_to_name = {v: k for k, v in loc_map.items()}
-    default_names = [geo_to_name.get(g, g) for g in active_geo if g in geo_to_name]
-    selected_names = st.multiselect("Localizacoes", options=sorted(loc_map.keys()), default=default_names)
+    current_name = geo_to_name.get(active_geo[0], "Brasil") if active_geo else "Brasil"
+    selected_name = st.radio("Localizacao", options=sorted(loc_map.keys()), index=sorted(loc_map.keys()).index(current_name) if current_name in loc_map else 0)
 
     st.markdown("---")
     st.markdown("<h3 style='color: #ffaa00;'>EMAIL (GMAIL SMTP)</h3>", unsafe_allow_html=True)
@@ -305,12 +305,11 @@ with st.sidebar:
         set_key(env_path, "EMAIL_USUARIO", email_user)
         set_key(env_path, "EMAIL_SENHA_APP", email_pass)
 
-        # Sync selected locations -> geo IDs in termos_busca.json + .env display name
-        new_geo_ids = [loc_map[n] for n in selected_names if n in loc_map]
-        termos_config["localizacoes_ids"] = new_geo_ids
+        # Sync selected location -> geo ID in termos_busca.json + .env display name
+        termos_config["localizacoes_ids"] = [loc_map[selected_name]] if selected_name in loc_map else ["106057199"]
         with open(config_path, "w", encoding="utf-8") as f:
             json.dump(termos_config, f, indent=2, ensure_ascii=False)
-        set_key(env_path, "LOCALIZACAO_FILTRO", ", ".join(selected_names) if selected_names else "Brasil")
+        set_key(env_path, "LOCALIZACAO_FILTRO", selected_name)
 
         st.rerun()
 
