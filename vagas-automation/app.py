@@ -88,10 +88,11 @@ if "extraction_report" not in st.session_state:
 if "confirm_clear" not in st.session_state:
     st.session_state.confirm_clear = False
 
-if "SCHEDULER_TIMES" not in globals():
-    SCHEDULER_TIMES = []
-if "SCHEDULER_THREAD_STARTED" not in globals():
-    SCHEDULER_THREAD_STARTED = False
+@st.cache_resource
+def get_scheduler_context():
+    return {"thread": None, "times": []}
+
+scheduler_ctx = get_scheduler_context()
 
 # Bloqueio de seguranca: se a thread de fundo marcou extracao pendente,
 # detecta AQUI no topo de cada execucao, antes de qualquer UI.
@@ -106,7 +107,7 @@ if st.session_state.scheduler_started and not st.session_state.running_extractio
 # ---------------------------------------------------------------------------
 # Scheduler: thread de fundo
 # ---------------------------------------------------------------------------
-def _loop_agendador():
+def _loop_agendador(ctx):
     while True:
         try:
             now = datetime.now()
@@ -115,7 +116,7 @@ def _loop_agendador():
             if os.path.exists("_scheduler_state.json"):
                 with open("_scheduler_state.json") as f:
                     state = json.load(f)
-            for t in SCHEDULER_TIMES:
+            for t in ctx["times"]:
                 h, m = map(int, t.split(":"))
                 key = f"{hoje}_{t}"
                 minutos_agora = now.hour * 60 + now.minute
@@ -152,21 +153,25 @@ def _persist_scheduler_state(times):
         json.dump(state, f)
 
 def _salvar_agendador(times):
-    global SCHEDULER_TIMES, SCHEDULER_THREAD_STARTED
-    SCHEDULER_TIMES = list(times)
     st.session_state.scheduler_times = list(times)
     st.session_state.scheduler_started = True
     _persist_scheduler_state(times)
     _save_scheduler_config(times, started=True)
-    if not SCHEDULER_THREAD_STARTED:
+    
+    scheduler_ctx["times"] = list(times)
+    if scheduler_ctx["thread"] is None or not scheduler_ctx["thread"].is_alive():
         from core.logger import log_info
-        log_info(f"[SCHEDULER] Thread de fundo iniciada com horarios: {', '.join(SCHEDULER_TIMES)}")
-        t = threading.Thread(target=_loop_agendador, daemon=True)
+        log_info(f"[SCHEDULER] Thread de fundo iniciada com horarios: {', '.join(times)}")
+        t = threading.Thread(target=_loop_agendador, args=(scheduler_ctx,), daemon=True)
         t.start()
-        SCHEDULER_THREAD_STARTED = True
+        scheduler_ctx["thread"] = t
 
-if st.session_state.scheduler_started and not SCHEDULER_THREAD_STARTED:
-    _salvar_agendador(st.session_state.scheduler_times)
+if st.session_state.scheduler_started:
+    scheduler_ctx["times"] = st.session_state.scheduler_times
+    if scheduler_ctx["thread"] is None or not scheduler_ctx["thread"].is_alive():
+        t = threading.Thread(target=_loop_agendador, args=(scheduler_ctx,), daemon=True)
+        t.start()
+        scheduler_ctx["thread"] = t
 
 # ---------------------------------------------------------------------------
 # Header
@@ -285,7 +290,8 @@ if st.session_state.running_extraction:
 # Scheduler: verifica se houve execucao pendente (thread de fundo)
 # ---------------------------------------------------------------------------
 if st.session_state.scheduler_started and not st.session_state.running_extraction:
-    st.components.v1.html("<script>setTimeout(function(){window.location.reload();}, 2000);</script>", height=0)
+    from streamlit_autorefresh import st_autorefresh
+    st_autorefresh(interval=5000, key="scheduler_poll")
 
 # ---------------------------------------------------------------------------
 # Extraction report banner
@@ -300,31 +306,31 @@ if st.session_state.extraction_report:
     st.markdown(f"""
     <div style="background:linear-gradient(135deg,#0d0d0d,#151515);border:1px solid #333;border-radius:6px;padding:20px;margin-bottom:20px;">
         <div style="font-family:'JetBrains Mono',monospace;font-size:1rem;font-weight:700;color:#ffaa00;margin-bottom:16px;">
-            RELATORIO DA EXTRACAO // {r["timestamp"]}
+            RELATORIO DA EXTRACAO // {r['timestamp']}
         </div>
         <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:12px;">
             <div style="background:#0a0a0a;border:1px solid #222;border-radius:4px;padding:12px;text-align:center;">
-                <div style="font-size:1.6rem;font-weight:700;font-family:'JetBrains Mono',monospace;color:{cor_total};">+{r["delta_total"]}</div>
+                <div style="font-size:1.6rem;font-weight:700;font-family:'JetBrains Mono',monospace;color:{cor_total};">+{r['delta_total']}</div>
                 <div style="font-size:0.7rem;color:#888;text-transform:uppercase;margin-top:4px;">Novas nesta extracao</div>
             </div>
             <div style="background:#0a0a0a;border:1px solid #222;border-radius:4px;padding:12px;text-align:center;">
-                <div style="font-size:1.6rem;font-weight:700;font-family:'JetBrains Mono',monospace;color:{cor_vis};">+{r["delta_vis"]}</div>
+                <div style="font-size:1.6rem;font-weight:700;font-family:'JetBrains Mono',monospace;color:{cor_vis};">+{r['delta_vis']}</div>
                 <div style="font-size:0.7rem;color:#888;text-transform:uppercase;margin-top:4px;">Visiveis (score>=50)</div>
             </div>
             <div style="background:#0a0a0a;border:1px solid #222;border-radius:4px;padding:12px;text-align:center;">
-                <div style="font-size:1.6rem;font-weight:700;font-family:'JetBrains Mono',monospace;color:{cor_ocult};">+{r["delta_ocult"]}</div>
+                <div style="font-size:1.6rem;font-weight:700;font-family:'JetBrains Mono',monospace;color:{cor_ocult};">+{r['delta_ocult']}</div>
                 <div style="font-size:0.7rem;color:#888;text-transform:uppercase;margin-top:4px;">Ocultas (score<50)</div>
             </div>
             <div style="background:#0a0a0a;border:1px solid #222;border-radius:4px;padding:12px;text-align:center;">
-                <div style="font-size:1.6rem;font-weight:700;font-family:'JetBrains Mono',monospace;color:#0088ff;">+{r["delta_ln"]}</div>
+                <div style="font-size:1.6rem;font-weight:700;font-family:'JetBrains Mono',monospace;color:#0088ff;">+{r['delta_ln']}</div>
                 <div style="font-size:0.7rem;color:#888;text-transform:uppercase;margin-top:4px;">LinkedIn</div>
             </div>
             <div style="background:#0a0a0a;border:1px solid #222;border-radius:4px;padding:12px;text-align:center;">
-                <div style="font-size:1.6rem;font-weight:700;font-family:'JetBrains Mono',monospace;color:#aa66ff;">+{r["delta_gupy"]}</div>
+                <div style="font-size:1.6rem;font-weight:700;font-family:'JetBrains Mono',monospace;color:#aa66ff;">+{r['delta_gupy']}</div>
                 <div style="font-size:0.7rem;color:#888;text-transform:uppercase;margin-top:4px;">Gupy</div>
             </div>
             <div style="background:#0a0a0a;border:1px solid #222;border-radius:4px;padding:12px;text-align:center;grid-column:1/-1;">
-                <div style="font-size:0.85rem;font-weight:700;font-family:'JetBrains Mono',monospace;color:{cor_email};">EMAIL: {r["email"].upper()}</div>
+                <div style="font-size:0.85rem;font-weight:700;font-family:'JetBrains Mono',monospace;color:{cor_email};">EMAIL: {r['email'].upper()}</div>
             </div>
         </div>
     </div>
