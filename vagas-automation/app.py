@@ -53,26 +53,8 @@ st.markdown("""
 
 STATUS_OPTIONS = ["Novas", "Vou Aplicar", "Aplicado", "Excluir"]
 
-# ---------------------------------------------------------------------------
-# Session state
-# ---------------------------------------------------------------------------
-if "running_extraction" not in st.session_state:
-    st.session_state.running_extraction = False
-if "scheduler_times" not in st.session_state:
-    st.session_state.scheduler_times = _load_scheduler_config()["times"]
-if "scheduler_started" not in st.session_state:
-    st.session_state.scheduler_started = _load_scheduler_config()["started"]
-if "extraction_report" not in st.session_state:
-    st.session_state.extraction_report = None
-if "confirm_clear" not in st.session_state:
-    st.session_state.confirm_clear = False
-
 SCHEDULER_PEND_FILE = "_scheduler_pending.txt"
 SCHEDULER_CONFIG_FILE = "_scheduler_config.json"
-if "SCHEDULER_TIMES" not in globals():
-    SCHEDULER_TIMES = []
-if "SCHEDULER_THREAD_STARTED" not in globals():
-    SCHEDULER_THREAD_STARTED = False
 
 def _load_scheduler_config():
     defaults = ["06:00", "18:00"]
@@ -91,6 +73,25 @@ def _save_scheduler_config(times, started=True):
     payload = {"times": list(times), "started": bool(started)}
     with open(SCHEDULER_CONFIG_FILE, "w", encoding="utf-8") as f:
         json.dump(payload, f, indent=2, ensure_ascii=False)
+
+# ---------------------------------------------------------------------------
+# Session state
+# ---------------------------------------------------------------------------
+if "running_extraction" not in st.session_state:
+    st.session_state.running_extraction = False
+if "scheduler_times" not in st.session_state:
+    st.session_state.scheduler_times = _load_scheduler_config()["times"]
+if "scheduler_started" not in st.session_state:
+    st.session_state.scheduler_started = _load_scheduler_config()["started"]
+if "extraction_report" not in st.session_state:
+    st.session_state.extraction_report = None
+if "confirm_clear" not in st.session_state:
+    st.session_state.confirm_clear = False
+
+if "SCHEDULER_TIMES" not in globals():
+    SCHEDULER_TIMES = []
+if "SCHEDULER_THREAD_STARTED" not in globals():
+    SCHEDULER_THREAD_STARTED = False
 
 # ---------------------------------------------------------------------------
 # Scheduler: thread de fundo + gatilho visual na pagina
