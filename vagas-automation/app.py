@@ -106,6 +106,7 @@ if st.session_state.scheduler_started and not st.session_state.running_extractio
 # ---------------------------------------------------------------------------
 # Scheduler: thread de fundo
 # ---------------------------------------------------------------------------
+def _loop_agendador():
     while True:
         try:
             now = datetime.now()
