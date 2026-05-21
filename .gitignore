@@ -19,6 +19,7 @@ vagas-automation/.gitignore
 
 _scheduler_last_run.txt
 _scheduler_state.json
+_scheduler_config.json
 
 # OS
 .DS_Store

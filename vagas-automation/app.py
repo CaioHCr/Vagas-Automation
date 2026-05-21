@@ -59,19 +59,38 @@ STATUS_OPTIONS = ["Novas", "Vou Aplicar", "Aplicado", "Excluir"]
 if "running_extraction" not in st.session_state:
     st.session_state.running_extraction = False
 if "scheduler_times" not in st.session_state:
-    st.session_state.scheduler_times = ["06:00", "18:00"]
+    st.session_state.scheduler_times = _load_scheduler_config()["times"]
 if "scheduler_started" not in st.session_state:
-    st.session_state.scheduler_started = True
+    st.session_state.scheduler_started = _load_scheduler_config()["started"]
 if "extraction_report" not in st.session_state:
     st.session_state.extraction_report = None
 if "confirm_clear" not in st.session_state:
     st.session_state.confirm_clear = False
 
 SCHEDULER_PEND_FILE = "_scheduler_pending.txt"
+SCHEDULER_CONFIG_FILE = "_scheduler_config.json"
 if "SCHEDULER_TIMES" not in globals():
     SCHEDULER_TIMES = []
 if "SCHEDULER_THREAD_STARTED" not in globals():
     SCHEDULER_THREAD_STARTED = False
+
+def _load_scheduler_config():
+    defaults = ["06:00", "18:00"]
+    if not os.path.exists(SCHEDULER_CONFIG_FILE):
+        return {"times": defaults, "started": True}
+    try:
+        with open(SCHEDULER_CONFIG_FILE, "r", encoding="utf-8") as f:
+            data = json.load(f)
+        times = data.get("times", defaults)
+        started = data.get("started", True)
+        return {"times": times if times else defaults, "started": started}
+    except Exception:
+        return {"times": defaults, "started": True}
+
+def _save_scheduler_config(times, started=True):
+    payload = {"times": list(times), "started": bool(started)}
+    with open(SCHEDULER_CONFIG_FILE, "w", encoding="utf-8") as f:
+        json.dump(payload, f, indent=2, ensure_ascii=False)
 
 # ---------------------------------------------------------------------------
 # Scheduler: thread de fundo + gatilho visual na pagina
@@ -128,8 +147,9 @@ def _loop_agendador():
                     with open("_scheduler_state.json", "w") as f:
                         json.dump(state, f)
                     from core.logger import log_info
-                    log_info(f"[SCHEDULER] Disparo detectado para {t} em {hoje}. Executando pipeline silencioso.")
-                    _pipeline_silencioso()
+                    log_info(f"[SCHEDULER] Disparo detectado para {t} em {hoje}. Marcando extracao pendente na UI.")
+                    with open(SCHEDULER_PEND_FILE, "w") as f:
+                        f.write("1")
                     break
         except Exception:
             pass
@@ -159,6 +179,7 @@ def _salvar_agendador(times):
     st.session_state.scheduler_times = list(times)
     st.session_state.scheduler_started = True
     _persist_scheduler_state(times)
+    _save_scheduler_config(times, started=True)
     if not SCHEDULER_THREAD_STARTED:
         from core.logger import log_info
         log_info(f"[SCHEDULER] Thread de fundo iniciada com horarios: {', '.join(SCHEDULER_TIMES)}")
@@ -295,7 +316,7 @@ if st.session_state.running_extraction:
 # ---------------------------------------------------------------------------
 if st.session_state.scheduler_started and not st.session_state.running_extraction:
     _check_scheduler_pendente()
-    st.components.v1.html("<script>setTimeout(function(){window.location.reload();}, 5000);</script>", height=0)
+    st.components.v1.html("<script>setTimeout(function(){window.location.reload();}, 2000);</script>", height=0)
 
 # ---------------------------------------------------------------------------
 # Extraction report banner
@@ -423,6 +444,7 @@ with st.sidebar:
         SCHEDULER_TIMES = []
         st.session_state.scheduler_started = False
         st.session_state.scheduler_times = []
+        _save_scheduler_config([], started=False)
         st.rerun()
 
     st.markdown("---")
