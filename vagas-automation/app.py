@@ -135,11 +135,30 @@ def _loop_agendador():
             pass
         time.sleep(30)
 
-def _iniciar_agendador(times):
+def _persist_scheduler_state(times):
+    now = datetime.now()
+    hoje = now.strftime("%Y-%m-%d")
+    state = {}
+    if os.path.exists("_scheduler_state.json"):
+        try:
+            with open("_scheduler_state.json") as f:
+                state = json.load(f)
+        except Exception:
+            state = {}
+    minutos_agora = now.hour * 60 + now.minute
+    for t in times:
+        h, m = map(int, t.split(":"))
+        if h * 60 + m <= minutos_agora:
+            state[f"{hoje}_{t}"] = True
+    with open("_scheduler_state.json", "w") as f:
+        json.dump(state, f)
+
+def _salvar_agendador(times):
     global SCHEDULER_TIMES, SCHEDULER_THREAD_STARTED
     SCHEDULER_TIMES = list(times)
     st.session_state.scheduler_times = list(times)
     st.session_state.scheduler_started = True
+    _persist_scheduler_state(times)
     if not SCHEDULER_THREAD_STARTED:
         from core.logger import log_info
         log_info(f"[SCHEDULER] Thread de fundo iniciada com horarios: {', '.join(SCHEDULER_TIMES)}")
@@ -148,7 +167,7 @@ def _iniciar_agendador(times):
         SCHEDULER_THREAD_STARTED = True
 
 if st.session_state.scheduler_started and not SCHEDULER_THREAD_STARTED:
-    _iniciar_agendador(st.session_state.scheduler_times)
+    _salvar_agendador(st.session_state.scheduler_times)
 
 def _check_scheduler_pendente():
     if os.path.exists(SCHEDULER_PEND_FILE):
@@ -386,8 +405,8 @@ with st.sidebar:
 
     cron_times = [t1.strftime("%H:%M"), t2.strftime("%H:%M")]
 
-    if st.button("ATIVAR AGENDADOR", use_container_width=True):
-        _iniciar_agendador(cron_times)
+    if st.button("SALVAR AGENDADOR", use_container_width=True):
+        _salvar_agendador(cron_times)
         st.rerun()
 
     if st.session_state.scheduler_started:
