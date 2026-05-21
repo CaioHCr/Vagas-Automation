@@ -93,43 +93,19 @@ if "SCHEDULER_TIMES" not in globals():
 if "SCHEDULER_THREAD_STARTED" not in globals():
     SCHEDULER_THREAD_STARTED = False
 
-# ---------------------------------------------------------------------------
-# Scheduler: thread de fundo + gatilho visual na pagina
-# ---------------------------------------------------------------------------
-def _pipeline_silencioso():
-    try:
-        load_dotenv(".env", override=True)
-        roles = os.getenv("CARGOS_ALVO", "")
-        location = os.getenv("LOCALIZACAO_FILTRO", "Brasil")
-        from core.logger import log_info
-        _antes = len(get_all_vagas())
-        config_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "config", "termos_busca.json")
-        with open(config_path) as f:
-            termos_config = json.load(f)
-        consultorias_str = ",".join(termos_config.get("consultorias_ids", []))
-        fetch_linkedin_jobs_http(roles=roles, location_filter=location, lista_empresas=None)
-        fetch_gupy_jobs(roles=roles, location_filter=location)
-        if consultorias_str:
-            fetch_linkedin_jobs_http(roles=roles, location_filter=location, lista_empresas=consultorias_str)
-        email_user = os.getenv("EMAIL_USUARIO", "")
-        email_pass = os.getenv("EMAIL_SENHA_APP", "")
-        if email_user and email_pass:
-            all_v = get_all_vagas()
-            df = pd.DataFrame(all_v)
-            df_novas = df[df["status_candidatura"] == "Novas"]
-            if not df_novas.empty:
-                delta = len(all_v) - _antes
-                enviar_resumo_email(df_novas, email_user, email_pass, delta_novas=delta, total_sistema=len(all_v))
-        log_info(f"[SCHEDULER] Pipeline executado em {datetime.now().strftime('%d/%m/%Y %H:%M')}")
-        with open("_scheduler_last_run.txt", "w") as f:
-            f.write(datetime.now().strftime("%d/%m/%Y %H:%M"))
-        with open(SCHEDULER_PEND_FILE, "w") as f:
-            f.write("1")
-    except Exception as e:
-        from core.logger import log_error
-        log_error(f"[SCHEDULER] Erro no pipeline silencioso: {e}")
+# Bloqueio de seguranca: se a thread de fundo marcou extracao pendente,
+# detecta AQUI no topo de cada execucao, antes de qualquer UI.
+if st.session_state.scheduler_started and not st.session_state.running_extraction:
+    if os.path.exists(SCHEDULER_PEND_FILE):
+        try:
+            os.remove(SCHEDULER_PEND_FILE)
+        except Exception:
+            pass
+        st.session_state.running_extraction = True
 
-def _loop_agendador():
+# ---------------------------------------------------------------------------
+# Scheduler: thread de fundo
+# ---------------------------------------------------------------------------
     while True:
         try:
             now = datetime.now()
@@ -190,14 +166,6 @@ def _salvar_agendador(times):
 
 if st.session_state.scheduler_started and not SCHEDULER_THREAD_STARTED:
     _salvar_agendador(st.session_state.scheduler_times)
-
-def _check_scheduler_pendente():
-    if os.path.exists(SCHEDULER_PEND_FILE):
-        try:
-            os.remove(SCHEDULER_PEND_FILE)
-            st.session_state.running_extraction = True
-        except Exception:
-            pass
 
 # ---------------------------------------------------------------------------
 # Header
@@ -316,7 +284,6 @@ if st.session_state.running_extraction:
 # Scheduler: verifica se houve execucao pendente (thread de fundo)
 # ---------------------------------------------------------------------------
 if st.session_state.scheduler_started and not st.session_state.running_extraction:
-    _check_scheduler_pendente()
     st.components.v1.html("<script>setTimeout(function(){window.location.reload();}, 2000);</script>", height=0)
 
 # ---------------------------------------------------------------------------
