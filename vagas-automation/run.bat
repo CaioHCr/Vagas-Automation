@@ -1,5 +1,10 @@
 @echo off
 cd /d "%~dp0"
+if errorlevel 1 (
+    echo [ERRO] Nao foi possivel acessar o diretorio do script.
+    pause
+    exit /b 1
+)
 title Vagas Automation - Painel
 
 copy nul "__perm_test.tmp" >nul 2>&1
