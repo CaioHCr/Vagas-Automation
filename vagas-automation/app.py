@@ -68,8 +68,10 @@ if "confirm_clear" not in st.session_state:
     st.session_state.confirm_clear = False
 
 SCHEDULER_PEND_FILE = "_scheduler_pending.txt"
-SCHEDULER_TIMES = []
-SCHEDULER_THREAD_STARTED = False
+if "SCHEDULER_TIMES" not in globals():
+    SCHEDULER_TIMES = []
+if "SCHEDULER_THREAD_STARTED" not in globals():
+    SCHEDULER_THREAD_STARTED = False
 
 # ---------------------------------------------------------------------------
 # Scheduler: thread de fundo + gatilho visual na pagina
@@ -125,6 +127,8 @@ def _loop_agendador():
                     state[key] = True
                     with open("_scheduler_state.json", "w") as f:
                         json.dump(state, f)
+                    from core.logger import log_info
+                    log_info(f"[SCHEDULER] Disparo detectado para {t} em {hoje}. Executando pipeline silencioso.")
                     _pipeline_silencioso()
                     break
         except Exception:
@@ -137,6 +141,8 @@ def _iniciar_agendador(times):
     st.session_state.scheduler_times = list(times)
     st.session_state.scheduler_started = True
     if not SCHEDULER_THREAD_STARTED:
+        from core.logger import log_info
+        log_info(f"[SCHEDULER] Thread de fundo iniciada com horarios: {', '.join(SCHEDULER_TIMES)}")
         t = threading.Thread(target=_loop_agendador, daemon=True)
         t.start()
         SCHEDULER_THREAD_STARTED = True
