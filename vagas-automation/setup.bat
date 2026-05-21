@@ -1,11 +1,13 @@
 @echo off
 setlocal
 cd /d "%~dp0"
-
-:: Se fechar instantaneamente, rode manualmente no terminal:
-::   1. Abra CMD (Win+R, cmd, Enter)
-::   2. cd /d "C:\caminho\para\Vagas-Automation\vagas-automation"
-::   3. setup.bat
+if errorlevel 1 (
+    echo [ERRO] Nao foi possivel acessar o diretorio do script.
+    echo        Caminho: "%~dp0"
+    echo        Tente mover a pasta para C:\Users\SeuNome\
+    pause
+    exit /b 1
+)
 
 title Vagas Automation Setup
 set PYTHON_VERSION=3.12.9
@@ -21,7 +23,7 @@ echo [0/6] Verificando permissoes de escrita...
 echo Teste: %CD%
 copy nul "__perm_test.tmp" >nul 2>&1
 if errorlevel 1 (
-    echo [ERRO] Sem permissao de escrita nesta pasta.
+    echo [ERRO] Sem permissao de escrita em: %CD%
     echo.
     echo        Causas possiveis:
     echo        1. Voce esta em C:\ ou outra pasta protegida
