@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <!-- Usando CDN mas com failover para carregar mesmo com latência -->
+    <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@400;700&display=swap');
+        body { background: transparent; font-family: 'Inter', sans-serif; color: #eee; margin: 0; padding: 0; overflow: hidden; }
+        #kanban-root { display: flex; flex-direction: row; gap: 15px; align-items: flex-start; padding: 10px; width: 100%; }
+        .kanban-column { 
+            flex: 1; background: rgba(255, 255, 255, 0.01); border-right: 1px solid rgba(255, 255, 255, 0.05);
+            min-height: 80vh; padding: 15px; display: flex; flex-direction: column;
+        }
+        .kanban-column:last-child { border-right: none; }
+        .column-title { 
+            font-family: 'JetBrains Mono', monospace; color: #ffaa00; font-size: 0.8rem; 
+            text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 25px; display: flex; align-items: center;
+        }
+        .column-title::before { content: ""; width: 6px; height: 6px; background: #ffaa00; margin-right: 10px; }
+        .cards-container { flex-grow: 1; min-height: 150px; display: flex; flex-direction: column; gap: 12px; }
+        .vaga-card { 
+            background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.08);
+            padding: 15px; border-radius: 2px; font-size: 0.85rem; cursor: grab; transition: all 0.2s;
+            backdrop-filter: blur(5px); line-height: 1.4;
+        }
+        .vaga-card:hover { border-color: #ffaa00; background: rgba(255, 255, 255, 0.06); }
+        .score-tag { display: block; margin-top: 10px; font-family: 'JetBrains Mono', monospace; color: #00ff66; font-weight: bold; font-size: 0.75rem; }
+        .sortable-ghost { opacity: 0.3; background: rgba(255, 170, 0, 0.2) !important; }
+    </style>
+</head>
+<body>
+    <div id="kanban-root">
+        <div style="padding: 20px; font-family: monospace; color: #444;">[ INITIALIZING_ENGINE... ]</div>
+    </div>
+
+    <script>
+        const Streamlit = {
+            setComponentValue: function(value) {
+                window.parent.postMessage({type: "streamlit:setComponentValue", value: value}, "*");
+            },
+            setFrameHeight: function(height) {
+                window.parent.postMessage({type: "streamlit:setFrameHeight", height: height}, "*");
+            },
+            setComponentReady: function() {
+                window.parent.postMessage({type: "streamlit:componentReady", apiVersion: 1}, "*");
+            }
+        };
+
+        function render(args) {
+            if (!args || !args.categories) return;
+            const root = document.getElementById('kanban-root');
+            root.innerHTML = '';
+
+            Object.keys(args.categories).forEach(s => {
+                const col = document.createElement('div');
+                col.className = 'kanban-column';
+                col.innerHTML = `
+                    <div class="column-title">${args.statusMap[s]}</div>
+                    <div class="cards-container" id="list-${s}"></div>
+                `;
+                root.appendChild(col);
+
+                const list = col.querySelector('.cards-container');
+                args.categories[s].forEach(v => {
+                    const card = document.createElement('div');
+                    card.className = 'vaga-card';
+                    card.setAttribute('data-id', v.id);
+                    card.innerHTML = `${v.label}<span class="score-tag">MATCH: ${v.score}%</span>`;
+                    list.appendChild(card);
+                });
+
+                new Sortable(list, {
+                    group: 'shared',
+                    animation: 150,
+                    ghostClass: 'sortable-ghost',
+                    onEnd: (evt) => {
+                        if (evt.from !== evt.to) {
+                            Streamlit.setComponentValue({
+                                id: evt.item.getAttribute('data-id'),
+                                status: evt.to.id.replace('list-', '')
+                            });
+                        }
+                    }
+                });
+            });
+            Streamlit.setFrameHeight(document.documentElement.scrollHeight);
+        }
+
+        window.addEventListener("message", (event) => {
+            if (event.data.type === "streamlit:render") {
+                render(event.data.args);
+            }
+        });
+
+        Streamlit.setComponentReady();
+    </script>
+</body>
+</html>
