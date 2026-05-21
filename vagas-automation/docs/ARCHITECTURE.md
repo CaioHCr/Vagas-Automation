@@ -8,8 +8,8 @@ projeto/
 │
 └── vagas-automation/
     ├── app.py                       # Streamlit: painel + 3 fases + CRON
-    ├── setup.bat                    # Instalacao completa (Python incluso)
-    ├── run.bat                      # Atalho para iniciar o painel
+    ├── INSTALE CLICANDO AQUI.bat                    # Instalacao completa (Python incluso)
+    ├── INICIE O PROGRAMA.bat                      # Atalho para iniciar o painel
     ├── check_vm.bat                 # Validacao pre-deployment
     ├── requirements.txt             # Dependencias Python
     ├── prompt_sistema.txt           # System prompt OpenAI (regras de scoring)
@@ -223,7 +223,7 @@ A barra lateral (recolhida por padrao) contem:
 ### Setup automatico (Windows — PC sem nada instalado)
 ```bash
 cd vagas-automation
-setup.bat
+INSTALE CLICANDO AQUI.bat
 ```
 O script:
 1. Detecta Python. Se nao existir, baixa e instala Python 3.12.9 automaticamente:
@@ -247,7 +247,7 @@ python -m playwright install chromium
 ### Executar
 ```bash
 python -m streamlit run app.py
-# ou clique duas vezes em run.bat
+# ou clique duas vezes em INICIE O PROGRAMA.bat
 ```
 
 ### Dependencias (requirements.txt)
@@ -278,7 +278,7 @@ schedule>=1.2
 - Logs usam `RotatingFileHandler` com limite de 5MB. Quando estoura, o arquivo
   e renomeado para `execution.log.1` e um novo `execution.log` e criado.
   `clear_logs()` tambem remove o backup `.1`
-- `setup.bat` e `run.bat` testam permissao de escrita no primeiro passo. Se o
+- `INSTALE CLICANDO AQUI.bat` e `INICIE O PROGRAMA.bat` testam permissao de escrita no primeiro passo. Se o
   usuario tentar rodar de `C:\` ou outra pasta protegida sem Admin, exibem
   instrucao para executar como Administrador
 - Ambos os batch files usam `cd /d "%~dp0"`, o que os torna resilientes a

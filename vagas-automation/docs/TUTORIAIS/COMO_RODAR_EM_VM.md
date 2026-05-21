@@ -13,10 +13,10 @@ Guia passo a passo para maquinas Windows sem Python, sem nada.
 ```cmd
 git clone https://github.com/CaioHCr/Vagas-Automation.git
 cd Vagas-Automation\vagas-automation
-setup.bat
+INSTALE CLICANDO AQUI.bat
 ```
 
-O `setup.bat` faz tudo automaticamente:
+O `INSTALE CLICANDO AQUI.bat` faz tudo automaticamente:
 
 | Passo | O que faz |
 |---|---|
@@ -43,7 +43,7 @@ Se quiser notificacao por email, preencha tambem `EMAIL_USUARIO` e `EMAIL_SENHA_
 ## Executar
 
 ```cmd
-run.bat
+INICIE O PROGRAMA.bat
 ```
 
 O painel abre no navegador em `http://localhost:8501`.
@@ -57,19 +57,19 @@ Isso ocorre quando ha erro antes do `pause`. Para ver o erro:
 ```cmd
 # Abra o CMD manualmente (Win+R, cmd, Enter)
 cd /d "C:\caminho\completo\ate\vagas-automation"
-setup.bat
+INSTALE CLICANDO AQUI.bat
 ```
 
 ### "Sem permissao de escrita"
 
-`setup.bat` e `run.bat` testam se conseguem criar arquivos na pasta. Se estiver em `C:\` ou `Program Files`, execute como Administrador:
+`INSTALE CLICANDO AQUI.bat` e `INICIE O PROGRAMA.bat` testam se conseguem criar arquivos na pasta. Se estiver em `C:\` ou `Program Files`, execute como Administrador:
 - Clique direito > "Executar como administrador"
 
 ### "Python nao encontrado apos instalacao"
 
 O instalador do Python adiciona ao PATH. Se ainda assim nao funcionar:
 - Feche e abra um novo CMD
-- Ou execute `setup.bat` novamente (ele tenta forcar o PATH)
+- Ou execute `INSTALE CLICANDO AQUI.bat` novamente (ele tenta forcar o PATH)
 
 ### "Erro 429 (Too Many Requests) no LinkedIn"
 

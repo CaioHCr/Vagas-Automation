@@ -7,8 +7,8 @@ Automacao de busca e analise de vagas executivas com IA.
 ```
 Vagas-Automation/
   app.py              Painel Streamlit
-  setup.bat           Instalacao 1-clique (Python + dependencias)
-  run.bat             Iniciar o painel
+  INSTALE CLICANDO AQUI.bat           Instalacao 1-clique (Python + dependencias)
+  INICIE O PROGRAMA.bat             Iniciar o painel
   check_vm.bat        Validacao pre-deployment
   .env.example        Template de configuracao
   config/             Termos de busca, geo IDs
@@ -21,9 +21,9 @@ Vagas-Automation/
 ## Primeiros passos
 
 ```cmd
-setup.bat
+INSTALE CLICANDO AQUI.bat
 notepad .env                    # coloque sua chave OpenAI
-run.bat
+INICIE O PROGRAMA.bat
 ```
 
 ## Documentacao
