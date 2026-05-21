@@ -2,6 +2,13 @@
 :: Auto-unblock (remove Mark of the Web)
 powershell -NoProfile -Command "Unblock-File -Path '%~f0'" >nul 2>&1
 
+:: Garantir que a janela NUNCA feche
+if "%1"=="" (
+    title VAGAS - PAINEL
+    cmd /k "%~f0 _inner"
+    exit /b
+)
+
 cd /d "%~dp0"
 if errorlevel 1 (
     echo [ERRO] Nao foi possivel acessar o diretorio.

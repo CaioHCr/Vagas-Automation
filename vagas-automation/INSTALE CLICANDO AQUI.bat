@@ -2,7 +2,14 @@
 :: Auto-unblock (remove Mark of the Web do Windows)
 powershell -NoProfile -Command "Unblock-File -Path '%~f0'" >nul 2>&1
 
-cd /d "%~dp0" >nul 2>&1
+:: Garantir que a janela NUNCA feche: re-invoca com cmd /k
+if "%1"=="" (
+    title VAGAS - INSTALACAO
+    cmd /k "%~f0 _inner"
+    exit /b
+)
+
+cd /d "%~dp0"
 if errorlevel 1 (
     echo.
     echo [ERRO FATAL] Nao foi possivel acessar:
