@@ -2,6 +2,11 @@
 setlocal
 cd /d "%~dp0"
 
+:: Se fechar instantaneamente, rode manualmente no terminal:
+::   1. Abra CMD (Win+R, cmd, Enter)
+::   2. cd /d "C:\caminho\para\Vagas-Automation\vagas-automation"
+::   3. setup.bat
+
 title Vagas Automation Setup
 set PYTHON_VERSION=3.12.9
 
@@ -17,11 +22,16 @@ echo Teste: %CD%
 copy nul "__perm_test.tmp" >nul 2>&1
 if errorlevel 1 (
     echo [ERRO] Sem permissao de escrita nesta pasta.
-    echo        Execute setup.bat como Administrador
-    echo        ou mova a pasta para um local sem restricao
-    echo        (ex: C:\Users\SeuNome\Vagas).
     echo.
-    echo        Clique com botao direito ^> "Executar como administrador"
+    echo        Causas possiveis:
+    echo        1. Voce esta em C:\ ou outra pasta protegida
+    echo        2. Antivirus bloqueando criacao de arquivo
+    echo        3. Disco cheio ou sem espaco
+    echo.
+    echo        Solucoes:
+    echo        - Clique com botao direito ^> "Executar como administrador"
+    echo        - Ou mova a pasta para C:\Users\SeuNome\
+    echo.
     pause
     exit /b 1
 )
@@ -226,4 +236,4 @@ echo.
 echo   Ou clique duas vezes em run.bat
 echo.
 echo   Pressione qualquer tecla para sair...
-pause >nul
+pause
