@@ -55,13 +55,17 @@ def fetch_linkedin_jobs_http(ui_callback=None, roles=None, location_filter=None,
             if inseridas >= MAX_VAGAS:
                 break
 
-            log(f"LinkedIn: Buscando '{role}' (geoId={geo_id})...")
+            is_worldwide = geo_id == "WORLDWIDE"
+            label = "Remoto (Worldwide)" if is_worldwide else f"geoId={geo_id}"
+            log(f"LinkedIn: Buscando '{role}' ({label})...")
+            cargo_com_remote = f"{cargo_formatado}%20remote" if is_worldwide else cargo_formatado
+            geo_part = "" if is_worldwide else f"&geoId={geo_id}"
 
             for offset in range(0, MAX_VAGAS, PAGE_SIZE):
                 if inseridas >= MAX_VAGAS:
                     break
 
-                url = f"https://br.linkedin.com/jobs-guest/jobs/api/seeMoreJobPostings/search?keywords={cargo_formatado}&geoId={geo_id}{f_c_param}&start={offset}"
+                url = f"https://br.linkedin.com/jobs-guest/jobs/api/seeMoreJobPostings/search?keywords={cargo_com_remote}{geo_part}{f_c_param}&start={offset}"
 
                 try:
                     res = session.get(url, headers=headers, timeout=15)

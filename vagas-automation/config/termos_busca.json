@@ -20,6 +20,7 @@
   ],
   "localizacoes_disponiveis": {
     "Brasil": "106057199",
-    "America do Sul": "104514572"
+    "LATAM": "104514572",
+    "Remoto (Worldwide)": "WORLDWIDE"
   }
 }
