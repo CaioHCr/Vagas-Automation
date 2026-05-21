@@ -1,4 +1,5 @@
 @echo off
+powershell -NoProfile -Command "Unblock-File -Path '%~f0'" >nul 2>&1
 cd /d "%~dp0"
 
 echo ===============================================

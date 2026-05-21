@@ -1,10 +1,17 @@
 @echo off
-setlocal
-cd /d "%~dp0"
+:: Auto-unblock (remove Mark of the Web do Windows)
+powershell -NoProfile -Command "Unblock-File -Path '%~f0'" >nul 2>&1
+
+cd /d "%~dp0" >nul 2>&1
 if errorlevel 1 (
-    echo [ERRO] Nao foi possivel acessar o diretorio do script.
-    echo        Caminho: "%~dp0"
-    echo        Tente mover a pasta para C:\Users\SeuNome\
+    echo.
+    echo [ERRO FATAL] Nao foi possivel acessar:
+    echo %~dp0
+    echo.
+    echo Causa comum: Windows 11 bloqueou o arquivo baixado.
+    echo Solucao: Clique direito no arquivo > Propriedades >
+    echo          Marque "Desbloquear" > Aplicar.
+    echo.
     pause
     exit /b 1
 )
@@ -12,9 +19,6 @@ if errorlevel 1 (
 title Vagas Automation Setup
 set PYTHON_VERSION=3.12.9
 
-:: --------------------------------------------------
-:: [0/6] Permission check (protected path like C:\)
-:: --------------------------------------------------
 echo ====================================================
 echo   VAGAS AUTOMATION - SETUP
 echo ====================================================

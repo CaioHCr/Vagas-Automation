@@ -1,7 +1,10 @@
 @echo off
+:: Auto-unblock (remove Mark of the Web)
+powershell -NoProfile -Command "Unblock-File -Path '%~f0'" >nul 2>&1
+
 cd /d "%~dp0"
 if errorlevel 1 (
-    echo [ERRO] Nao foi possivel acessar o diretorio do script.
+    echo [ERRO] Nao foi possivel acessar o diretorio.
     pause
     exit /b 1
 )
