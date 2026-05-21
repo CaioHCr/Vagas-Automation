@@ -368,6 +368,13 @@ with st.sidebar:
     current_name = geo_to_name.get(active_geo[0], "Brasil") if active_geo else "Brasil"
     selected_name = st.radio("Localizacao", options=sorted(loc_map.keys()), index=sorted(loc_map.keys()).index(current_name) if current_name in loc_map else 0)
 
+    if selected_name != current_name and selected_name in loc_map:
+        termos_config["localizacoes_ids"] = [loc_map[selected_name]]
+        with open(config_path, "w", encoding="utf-8") as f:
+            json.dump(termos_config, f, indent=2, ensure_ascii=False)
+        set_key(env_path, "LOCALIZACAO_FILTRO", selected_name)
+        st.caption(f"Localizacao salva automaticamente: {selected_name}")
+
     st.markdown("---")
     st.markdown("<h3 style='color: #ffaa00;'>EMAIL (GMAIL SMTP)</h3>", unsafe_allow_html=True)
     email_user = st.text_input("E-mail", value=os.getenv("EMAIL_USUARIO", ""))
