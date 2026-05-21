@@ -7,7 +7,7 @@ import pandas as pd
 from datetime import datetime
 from dotenv import load_dotenv, set_key
 import schedule
-from core.database import get_all_vagas, get_visible_vagas, update_status, update_vaga_analysis, hide_all_vagas, init_db
+from core.database import get_all_vagas, get_visible_vagas, update_status, update_vaga_analysis, hide_all_vagas, clear_all_vagas, init_db
 from core.scraper_gupy import fetch_gupy_jobs
 from core.scraper_ln import fetch_linkedin_jobs_http
 from core.intelligence import analyze_vaga
@@ -65,6 +65,8 @@ if "scheduler_started" not in st.session_state:
     st.session_state.scheduler_started = False
 if "extraction_report" not in st.session_state:
     st.session_state.extraction_report = None
+if "confirm_clear" not in st.session_state:
+    st.session_state.confirm_clear = False
 
 # ---------------------------------------------------------------------------
 # CRON daemon
@@ -437,6 +439,25 @@ with tab_cards:
 # Tab: Sheet
 # ---------------------------------------------------------------------------
 with tab_sheet:
+    st.markdown("### MEMORIA DE VAGAS")
+
+    if st.session_state.confirm_clear:
+        st.warning("Tem certeza? Esta acao apaga TODAS as vagas do banco de dados permanentemente.")
+        col_sim, col_nao = st.columns(2)
+        with col_sim:
+            if st.button("SIM, APAGAR TUDO", use_container_width=True, type="primary"):
+                clear_all_vagas()
+                st.session_state.confirm_clear = False
+                st.rerun()
+        with col_nao:
+            if st.button("CANCELAR", use_container_width=True):
+                st.session_state.confirm_clear = False
+                st.rerun()
+    else:
+        if st.button("APAGAR MEMORIA", use_container_width=True):
+            st.session_state.confirm_clear = True
+            st.rerun()
+
     df = pd.DataFrame(get_all_vagas())
     if not df.empty:
         cols = [c for c in ['data_captura', 'cargo', 'empresa', 'plataforma', 'score_aderencia', 'justificativa', 'link', 'status_candidatura'] if c in df.columns]

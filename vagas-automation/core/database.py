@@ -123,5 +123,12 @@ def hide_all_vagas(status: str):
     conn.commit()
     conn.close()
 
+def clear_all_vagas():
+    conn = sqlite3.connect(DB_PATH)
+    cursor = conn.cursor()
+    cursor.execute('DELETE FROM vagas')
+    conn.commit()
+    conn.close()
+
 if __name__ == "__main__":
     init_db()

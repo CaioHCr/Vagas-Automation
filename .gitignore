@@ -10,6 +10,11 @@ vagas.db
 cookies.json
 
 *.csv
+*.png
+*.pdf
+last_gupy_error.html
+"Job Feed Unificado v5 (3).json"
+"Captura de tela 2026-05-19 "*
 
 # OS
 .DS_Store
