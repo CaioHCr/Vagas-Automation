@@ -189,6 +189,10 @@ if not exist .env (
         echo.CARGOS_ALVO=COO,Diretor de Operacoes,Diretor Industrial
         echo.KEYWORDS_EXECUTIVAS=Turnaround,Excelencia Operacional,Supply Chain
         echo.LOCALIZACAO_FILTRO=Brasil
+        echo.
+        echo.# Email (Gmail SMTP)
+        echo.EMAIL_USUARIO=seu-email@gmail.com
+        echo.EMAIL_SENHA_APP=aaaa bbbb cccc dddd
     ) > .env
     echo [AVISO] Edite o arquivo .env com sua chave OpenAI antes de rodar o painel.
 )
