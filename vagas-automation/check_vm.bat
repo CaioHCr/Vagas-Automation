@@ -48,7 +48,7 @@ if errorlevel 1 (
 :: 5. Sintaxe dos modulos
 echo [5/5] Verificando sintaxe dos modulos...
 cd /d "%~dp0"
-python check_vm.py
+python scripts\check_vm.py
 if errorlevel 1 (
     echo [FALHA] Erro de sintaxe detectado.
     exit /b 1

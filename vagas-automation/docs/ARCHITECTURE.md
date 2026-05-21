@@ -10,23 +10,38 @@ projeto/
     ├── app.py                       # Streamlit: painel + 3 fases + CRON
     ├── setup.bat                    # Instalacao completa (Python incluso)
     ├── run.bat                      # Atalho para iniciar o painel
+    ├── check_vm.bat                 # Validacao pre-deployment
     ├── requirements.txt             # Dependencias Python
     ├── prompt_sistema.txt           # System prompt OpenAI (regras de scoring)
     ├── curriculo.txt                # CV do candidato (injetado no user_content)
-    ├── execution.log                # Log acumulado de todas as execucoes
-    ├── DOCUMENTATION.md             # Este arquivo
+    ├── .env.example                 # Template de configuracao
     │
     ├── config/
-    │   └── termos_busca.json        # Geo IDs, consultorias IDs
+    │   └── termos_busca.json        # Geo IDs, localizacoes, consultorias
     │
-    └── core/
-        ├── database.py              # SQLite: schema, CRUD, hide/show
-        ├── intelligence.py          # OpenAI + Jina Reader + pre-filter
-        ├── notifier.py              # Email SMTP (Gmail) com resumo HTML
-        ├── scraper_ln.py            # Motor HTTP LinkedIn Guest API
-        ├── scraper_gupy.py          # Motor HTTP Gupy API
-        ├── logger.py                # Logging com rotacao (5MB max)
-        └── config.py                # Pydantic Settings (.env loader)
+    ├── core/
+    │   ├── __init__.py
+    │   ├── database.py              # SQLite: schema, CRUD, hide/show
+    │   ├── intelligence.py          # OpenAI + Jina Reader + pre-filter
+    │   ├── notifier.py              # Email SMTP (Gmail) com resumo HTML
+    │   ├── scraper_ln.py            # Motor HTTP LinkedIn Guest API
+    │   ├── scraper_gupy.py          # Motor HTTP Gupy API
+    │   ├── logger.py                # Logging com rotacao (5MB max)
+    │   └── config.py                # Pydantic Settings (.env loader)
+    │
+    ├── docs/
+    │   ├── ARCHITECTURE.md          # Documentacao arquitetural
+    │   └── TUTORIAIS/
+    │       ├── COMO_PERSONALIZAR.md # Guia de customizacao para o cliente
+    │       └── COMO_RODAR_EM_VM.md  # Setup em maquina Windows limpa
+    │
+    ├── scripts/
+    │   └── check_vm.py             # Validacao pre-deployment (imports)
+    │
+    └── tools/
+        ├── auth_ln.py              # Autenticacao LinkedIn (cookie)
+        ├── cards_panel/            # Prototipo HTML do kanban
+        └── kanban_component/       # Componente kanban alternativo
 ```
 
 ## Pipeline de Extracao (3 Fases)
