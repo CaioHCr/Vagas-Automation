@@ -176,7 +176,7 @@ echo [5/6] Verificando arquivos de configuracao...
 if not exist config\termos_busca.json (
     echo [INFO] Criando config/termos_busca.json com valores padrao...
     if not exist config mkdir config
-    echo {"localizacoes_ids": ["106057199", "104514572"], "consultorias_ids": [], "localizacoes_disponiveis": {"Brasil": "106057199", "America do Sul": "104514572", "Mexico": "101165590", "Argentina": "104305915", "Chile": "104636935", "Colombia": "104954398", "Peru": "102930007"}} > config\termos_busca.json
+    echo {"localizacoes_ids": ["106057199", "104514572"], "consultorias_ids": [], "localizacoes_disponiveis": {"Brasil": "106057199", "America do Sul": "104514572"}} > config\termos_busca.json
 )
 
 if not exist .env (
