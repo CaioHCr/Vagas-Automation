@@ -273,11 +273,23 @@ with st.sidebar:
     st.markdown("<h3 style='color: #ffaa00;'>CONFIGURACOES</h3>", unsafe_allow_html=True)
 
     env_path = ".env"
+    config_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "config", "termos_busca.json")
     load_dotenv(env_path, override=True)
     openai_key = st.text_input("OpenAI Key", value=os.getenv("OPENAI_API_KEY", ""), type="password")
     cargos = st.text_area("Cargos-alvo", value=os.getenv("CARGOS_ALVO", ""))
     keywords = st.text_area("Keywords", value=os.getenv("KEYWORDS_EXECUTIVAS", ""))
-    local = st.text_input("Localizacao", value=os.getenv("LOCALIZACAO_FILTRO", ""))
+
+    # Location multiselect bound to geo IDs
+    try:
+        with open(config_path, "r") as f:
+            termos_config = json.load(f)
+    except Exception:
+        termos_config = {}
+    loc_map = termos_config.get("localizacoes_disponiveis", {"Brasil": "106057199"})
+    active_geo = termos_config.get("localizacoes_ids", ["106057199"])
+    geo_to_name = {v: k for k, v in loc_map.items()}
+    default_names = [geo_to_name.get(g, g) for g in active_geo if g in geo_to_name]
+    selected_names = st.multiselect("Localizacoes", options=sorted(loc_map.keys()), default=default_names)
 
     st.markdown("---")
     st.markdown("<h3 style='color: #ffaa00;'>EMAIL (GMAIL SMTP)</h3>", unsafe_allow_html=True)
@@ -290,9 +302,16 @@ with st.sidebar:
         set_key(env_path, "OPENAI_API_KEY", openai_key)
         set_key(env_path, "CARGOS_ALVO", cargos_clean)
         set_key(env_path, "KEYWORDS_EXECUTIVAS", keywords_clean)
-        set_key(env_path, "LOCALIZACAO_FILTRO", local)
         set_key(env_path, "EMAIL_USUARIO", email_user)
         set_key(env_path, "EMAIL_SENHA_APP", email_pass)
+
+        # Sync selected locations -> geo IDs in termos_busca.json + .env display name
+        new_geo_ids = [loc_map[n] for n in selected_names if n in loc_map]
+        termos_config["localizacoes_ids"] = new_geo_ids
+        with open(config_path, "w", encoding="utf-8") as f:
+            json.dump(termos_config, f, indent=2, ensure_ascii=False)
+        set_key(env_path, "LOCALIZACAO_FILTRO", ", ".join(selected_names) if selected_names else "Brasil")
+
         st.rerun()
 
     st.markdown("---")

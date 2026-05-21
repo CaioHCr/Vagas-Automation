@@ -17,5 +17,14 @@
     "157317",
     "3975",
     "3020263"
-  ]
+  ],
+  "localizacoes_disponiveis": {
+    "Brasil": "106057199",
+    "America do Sul": "104514572",
+    "Mexico": "101165590",
+    "Argentina": "104305915",
+    "Chile": "104636935",
+    "Colombia": "104954398",
+    "Peru": "102930007"
+  }
 }
