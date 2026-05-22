@@ -22,21 +22,22 @@ echo.
 echo [0/6] Verificando permissoes de escrita...
 echo Teste: %CD%
 copy nul "__perm_test.tmp" >nul 2>&1
-if errorlevel 1 (
-    echo [ERRO] Sem permissao de escrita em: %CD%
-    echo.
-    echo        Causas possiveis:
-    echo        1. Voce esta em C:\ ou outra pasta protegida
-    echo        2. Antivirus bloqueando criacao de arquivo
-    echo        3. Disco cheio ou sem espaco
-    echo.
-    echo        Solucoes:
-    echo        - Clique com botao direito ^> "Executar como administrador"
-    echo        - Ou mova a pasta para C:\Users\SeuNome\
-    echo.
-    pause
-    exit /b 1
-)
+if not errorlevel 1 goto :perm_ok
+echo [ERRO] Sem permissao de escrita em: "%CD%"
+echo.
+echo        Causas possiveis:
+echo        1. Voce esta em C:\ ou outra pasta protegida
+echo        2. Antivirus bloqueando criacao de arquivo
+echo        3. Disco cheio ou sem espaco
+echo.
+echo        Solucoes:
+echo        - Clique com botao direito ^> "Executar como administrador"
+echo        - Ou mova a pasta para C:\Users\SeuNome\
+echo.
+pause
+exit /b 1
+
+:perm_ok
 del "__perm_test.tmp" >nul 2>&1
 echo [OK] Permissao de escrita confirmada.
 echo.
