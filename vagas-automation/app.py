@@ -169,6 +169,7 @@ def _salvar_agendador(times):
 if st.session_state.scheduler_started:
     scheduler_ctx["times"] = st.session_state.scheduler_times
     if scheduler_ctx["thread"] is None or not scheduler_ctx["thread"].is_alive():
+        _persist_scheduler_state(st.session_state.scheduler_times)
         t = threading.Thread(target=_loop_agendador, args=(scheduler_ctx,), daemon=True)
         t.start()
         scheduler_ctx["thread"] = t

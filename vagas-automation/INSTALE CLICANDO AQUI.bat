@@ -236,7 +236,7 @@ echo.
 :: [6/6] Health check
 :: --------------------------------------------------
 echo [6/6] Verificando importacoes criticas...
-python -c "import streamlit, pandas, requests, openai, dotenv, bs4, schedule, pydantic, pydantic_settings" >nul 2>&1
+python -c "import streamlit, pandas, requests, openai, dotenv, bs4, pydantic, pydantic_settings" >nul 2>&1
 if errorlevel 1 (
     echo [ERRO] Uma ou mais bibliotecas nao foram instaladas corretamente.
     pause
