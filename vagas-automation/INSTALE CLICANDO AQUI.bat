@@ -131,7 +131,7 @@ set "PATH=%PATH%;%LocalAppData%\Programs\Python\Python312\;%LocalAppData%\Progra
 python --version >nul 2>&1
 if errorlevel 1 (
     echo [ERRO] Python instalado mas nao encontrado no PATH.
-    echo        Abra um novo terminal e execute setup.bat novamente.
+    echo        Abra um novo terminal e execute "INSTALE CLICANDO AQUI.bat" novamente.
     pause
     exit /b 1
 )

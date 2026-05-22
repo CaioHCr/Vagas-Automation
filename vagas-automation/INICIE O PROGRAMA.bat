@@ -33,7 +33,7 @@ if exist venv\Scripts\activate.bat (
         call conda activate base
     ) else (
         echo [ERRO] Ambiente virtual nao encontrado.
-        echo Execute setup.bat primeiro.
+        echo Execute "INSTALE CLICANDO AQUI.bat" primeiro.
         pause
         exit /b 1
     )
