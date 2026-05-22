@@ -185,29 +185,27 @@ echo.
 :: --------------------------------------------------
 echo [5/6] Verificando arquivos de configuracao...
 
-if not exist config\termos_busca.json (
-    echo [INFO] Criando config/termos_busca.json com valores padrao...
-    if not exist config mkdir config
-    echo {"localizacoes_ids": ["106057199", "104514572"], "consultorias_ids": [], "localizacoes_disponiveis": {"Brasil": "106057199", "LATAM": "104514572", "Remoto (Worldwide)": "WORLDWIDE"}} > config\termos_busca.json
-)
+if exist config\termos_busca.json goto :skip_termos
+echo [INFO] Criando config/termos_busca.json com valores padrao...
+if not exist config mkdir config
+echo {"localizacoes_ids": ["106057199", "104514572"], "consultorias_ids": [], "localizacoes_disponiveis": {"Brasil": "106057199", "LATAM": "104514572", "Remoto (Worldwide)": "WORLDWIDE"}} > config\termos_busca.json
+:skip_termos
 
-if not exist .env (
-    echo [INFO] Criando arquivo .env com valores padrao...
-    (
-        echo.# OpenAI
-        echo.OPENAI_API_KEY=sk-sua-chave-aqui
-        echo.
-        echo.# Busca
-        echo.CARGOS_ALVO=COO,Diretor de Operacoes,Diretor Industrial
-        echo.KEYWORDS_EXECUTIVAS=Turnaround,Excelencia Operacional,Supply Chain
-        echo.LOCALIZACAO_FILTRO=Brasil
-        echo.
-        echo.# Email (Gmail SMTP)
-        echo.EMAIL_USUARIO=seu-email@gmail.com
-        echo.EMAIL_SENHA_APP=aaaa bbbb cccc dddd
-    ) > .env
-    echo [AVISO] Edite o arquivo .env com sua chave OpenAI antes de rodar o painel.
-)
+if exist .env goto :skip_env
+echo [INFO] Criando arquivo .env com valores padrao...
+echo # OpenAI> .env
+echo OPENAI_API_KEY=sk-sua-chave-aqui>> .env
+echo.>> .env
+echo # Busca>> .env
+echo CARGOS_ALVO=COO,Diretor de Operacoes,Diretor Industrial>> .env
+echo KEYWORDS_EXECUTIVAS=Turnaround,Excelencia Operacional,Supply Chain>> .env
+echo LOCALIZACAO_FILTRO=Brasil>> .env
+echo.>> .env
+echo # Email (Gmail SMTP)>> .env
+echo EMAIL_USUARIO=seu-email@gmail.com>> .env
+echo EMAIL_SENHA_APP=aaaa bbbb cccc dddd>> .env
+echo [AVISO] Edite o arquivo .env com sua chave OpenAI antes de rodar o painel.
+:skip_env
 
 echo [OK] Arquivos de configuracao prontos.
 echo.
@@ -232,13 +230,12 @@ echo ====================================================
 echo   SETUP CONCLUIDO COM SUCESSO
 echo ====================================================
 echo.
-echo   Para rodar o painel:
-echo     python -m streamlit run app.py
+echo   O painel sera aberto automaticamente a seguir.
+echo   Para abrir futuramente, basta clicar em "INICIE O PROGRAMA.bat".
 echo.
-echo   Ou clique duas vezes em run.bat
-echo.
-echo   Pressione qualquer tecla para sair...
+echo   Pressione qualquer tecla para iniciar o app agora...
 pause
+start "" "INICIE O PROGRAMA.bat"
 exit /b 0
 
 :erro_cd
