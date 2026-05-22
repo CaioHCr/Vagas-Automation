@@ -47,8 +47,29 @@ echo.
 :: --------------------------------------------------
 echo [1/6] Verificando Python...
 
+:: Adicionar caminhos padrao ao PATH temporariamente caso o usuario tenha esquecido de marcar "Add to PATH"
+set "PATH=%PATH%;%LocalAppData%\Programs\Python\Python312\;%LocalAppData%\Programs\Python\Python312\Scripts\"
+set "PATH=%PATH%;C:\Program Files\Python312\;C:\Program Files\Python312\Scripts\"
+set "PATH=%PATH%;%LocalAppData%\Programs\Python\Python311\;%LocalAppData%\Programs\Python\Python311\Scripts\"
+set "PATH=%PATH%;C:\Program Files\Python311\;C:\Program Files\Python311\Scripts\"
+set "PATH=%PATH%;%LocalAppData%\Programs\Python\Python310\;%LocalAppData%\Programs\Python\Python310\Scripts\"
+set "PATH=%PATH%;C:\Program Files\Python310\;C:\Program Files\Python310\Scripts\"
+
 python --version >nul 2>&1
 if not errorlevel 1 goto :python_ok
+
+:: Se o 'py' estiver disponivel, podemos tentar extrair o caminho ou apenas prosseguir (mas vamos tentar usar o python direto)
+where py >nul 2>&1
+if not errorlevel 1 (
+    for /f "tokens=*" %%i in ('py -c "import sys; print(sys.executable)"') do set "PY_PATH=%%i"
+    if exist "%PY_PATH%" (
+        :: Retira o \python.exe do final para colocar na PATH
+        for %%A in ("%PY_PATH%") do set "PY_DIR=%%~dpA"
+        set "PATH=%PATH%;%PY_DIR%;%PY_DIR%Scripts\"
+        python --version >nul 2>&1
+        if not errorlevel 1 goto :python_ok
+    )
+)
 
 :: --- Python nao encontrado. Tentar instalar ---
 echo [AVISO] Python nao encontrado. Iniciando instalacao automatica...
