@@ -74,16 +74,7 @@ if not errorlevel 1 (
 :: --- Python nao encontrado. Tentar instalar ---
 echo [AVISO] Python nao encontrado. Iniciando instalacao automatica...
 
-:: 1a tentativa: winget (Windows 10 1809+)
-where winget >nul 2>&1
-if not errorlevel 1 (
-    echo [INFO] Baixando Python %PYTHON_VERSION% via winget...
-    winget install Python.Python.3.12 --accept-package-agreements --accept-source-agreements >nul 2>&1
-    if not errorlevel 1 (
-        echo [OK] Python instalado via winget.
-        goto :refresh_path_python
-    )
-)
+:: Vamos usar apenas o download direto com curl para garantir InstallAllUsers=0 e evitar prompts de Admin.
 
 :: 2a tentativa: download direto com curl
 where curl >nul 2>&1
