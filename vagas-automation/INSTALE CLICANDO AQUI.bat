@@ -89,23 +89,23 @@ if errorlevel 1 (
 )
 
 echo [INFO] Instalando Python (janela pode aparecer e fechar rapidamente)...
-"%INSTALLER_PATH%" /quiet InstallAllUsers=1 PrependPath=1 Include_test=0 Include_dev=1
+"%INSTALLER_PATH%" /quiet InstallAllUsers=0 PrependPath=1 Include_test=0 Include_dev=1
 if errorlevel 1 (
-    echo [ERRO] Falha ao instalar Python.
-    pause
-    exit /b 1
+    echo [ERRO] Falha ao instalar Python de forma oculta.
+    echo        Abrindo instalador normal... Por favor, conclua a instalacao manualmente!
+    echo        LEMBRE-SE DE MARCAR A OPCAO "Add Python to PATH" na primeira tela!
+    "%INSTALLER_PATH%"
+    if errorlevel 1 (
+        echo [ERRO] Falha na instalacao.
+        pause
+        exit /b 1
+    )
 )
 echo [OK] Python %PYTHON_VERSION% instalado.
 
 :refresh_path_python
-:: Forcar recarga do PATH para enxergar o Python novo
-for /f "tokens=*" %%i in ('%SYSTEMROOT%\System32\reg.exe query "HKLM\SYSTEM\CurrentControlSet\Control\Session Manager\Environment" /v PATH 2^>nul ^| findstr /i "REG_"') do (
-    setx PATH "%%i" >nul
-)
-:: Refresh local PATH
-call "%SYSTEMROOT%\System32\reg.exe" add "HKLM\SYSTEM\CurrentControlSet\Control\Session Manager\Environment" /f /v PATH /t REG_SZ /d "" >nul 2>&1
-:: Tentar no PATH local
-set "PATH=%PATH%;C:\Program Files\Python312\;C:\Program Files\Python312\Scripts\;C:\Program Files\Python312\Tools\scripts\"
+:: Tentar no PATH local para a sessao atual
+set "PATH=%PATH%;%LocalAppData%\Programs\Python\Python312\;%LocalAppData%\Programs\Python\Python312\Scripts\;C:\Program Files\Python312\;C:\Program Files\Python312\Scripts\"
 :: Verificar
 python --version >nul 2>&1
 if errorlevel 1 (
