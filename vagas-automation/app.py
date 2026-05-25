@@ -1,4 +1,5 @@
 import streamlit as st
+import streamlit.components.v1 as components
 import os
 import json
 import threading
@@ -16,6 +17,25 @@ from core.logger import clear_logs
 init_db()
 
 st.set_page_config(layout="wide", page_title="VAGAS // COMMAND CENTER", initial_sidebar_state="expanded")
+
+components.html("""
+<script>
+    async function keepAwake() {
+        try {
+            let n = window.parent.navigator || navigator;
+            if (n.wakeLock) {
+                let wakeLock = await n.wakeLock.request('screen');
+                document.addEventListener('visibilitychange', async () => {
+                    if (wakeLock !== null && document.visibilityState === 'visible') {
+                        wakeLock = await n.wakeLock.request('screen');
+                    }
+                });
+            }
+        } catch (e) {}
+    }
+    keepAwake();
+</script>
+""", height=0, width=0)
 
 st.markdown("""
     <style>
@@ -292,7 +312,7 @@ if st.session_state.running_extraction:
 # ---------------------------------------------------------------------------
 if st.session_state.scheduler_started and not st.session_state.running_extraction:
     from streamlit_autorefresh import st_autorefresh
-    st_autorefresh(interval=5000, key="scheduler_poll")
+    st_autorefresh(interval=60000, key="scheduler_poll")
 
 # ---------------------------------------------------------------------------
 # Extraction report banner
