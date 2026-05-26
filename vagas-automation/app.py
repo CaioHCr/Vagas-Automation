@@ -424,8 +424,21 @@ with st.sidebar:
     if _last_run:
         st.caption(f"Ultima execucao: {_last_run}")
 
-    t1 = st.time_input("Horario 1", value=datetime.strptime("06:00", "%H:%M").time(), step=timedelta(minutes=10), key="cron_t1")
-    t2 = st.time_input("Horario 2", value=datetime.strptime("18:00", "%H:%M").time(), step=timedelta(minutes=10), key="cron_t2")
+    val_t1 = st.session_state.scheduler_times[0] if len(st.session_state.scheduler_times) >= 1 else "06:00"
+    val_t2 = st.session_state.scheduler_times[1] if len(st.session_state.scheduler_times) >= 2 else "18:00"
+    
+    try:
+        t1_default = datetime.strptime(val_t1, "%H:%M").time()
+    except:
+        t1_default = datetime.strptime("06:00", "%H:%M").time()
+        
+    try:
+        t2_default = datetime.strptime(val_t2, "%H:%M").time()
+    except:
+        t2_default = datetime.strptime("18:00", "%H:%M").time()
+
+    t1 = st.time_input("Horario 1", value=t1_default, step=timedelta(minutes=10), key="cron_t1")
+    t2 = st.time_input("Horario 2", value=t2_default, step=timedelta(minutes=10), key="cron_t2")
 
     cron_times = [t1.strftime("%H:%M"), t2.strftime("%H:%M")]
 
