@@ -39,6 +39,14 @@ def vaga_existe(vaga_id: str) -> bool:
     conn.close()
     return exists
 
+def vaga_duplicada_por_titulo(cargo: str, empresa: str) -> bool:
+    conn = sqlite3.connect(DB_PATH)
+    cursor = conn.cursor()
+    cursor.execute('SELECT 1 FROM vagas WHERE LOWER(cargo) = LOWER(?) AND LOWER(empresa) = LOWER(?)', (cargo.strip(), empresa.strip()))
+    exists = cursor.fetchone() is not None
+    conn.close()
+    return exists
+
 def count_vagas_plataforma(plataforma: str) -> int:
     conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()

@@ -1,7 +1,8 @@
 import requests
 import json
 import os
-from .database import insert_vaga, generate_id, vaga_existe
+from .database import insert_vaga, generate_id, vaga_existe, vaga_duplicada_por_titulo
+from datetime import datetime, timedelta
 from .intelligence import analyze_vaga, pre_filter_vaga
 from .config import settings
 from .logger import log_info, log_error
@@ -73,9 +74,25 @@ def fetch_gupy_jobs(ui_callback=None, roles=None, location_filter=None):
 
                             vaga_id = generate_id(job_url)
 
-                            # Trava 1: memória — já existe?
+                            # Trava 1: memória — já existe pelo ID?
                             if vaga_existe(vaga_id):
                                 continue
+                                
+                            # Trava 1.5: Desduplicação por título e empresa
+                            if vaga_duplicada_por_titulo(job_name, company_name):
+                                log(f"Gupy: [DUPLICADA] {job_name} na empresa {company_name} já existe.")
+                                continue
+
+                            # Filtro de data (Atualidade): descartar vagas com mais de 5 dias
+                            pub_date_str = job.get('publishedDate', '')
+                            if pub_date_str:
+                                try:
+                                    pub_date = datetime.strptime(pub_date_str[:10], "%Y-%m-%d")
+                                    if (datetime.now() - pub_date).days > 5:
+                                        # log(f"Gupy: [ANTIGA] {job_name} postada em {pub_date_str[:10]}")
+                                        continue
+                                except Exception:
+                                    pass
 
                             # Filtro local
                             location = job.get('city', '')

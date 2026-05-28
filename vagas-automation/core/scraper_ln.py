@@ -4,7 +4,7 @@ import os
 import time
 from urllib.parse import urlparse, quote
 from bs4 import BeautifulSoup
-from .database import insert_vaga, generate_id, vaga_existe
+from .database import insert_vaga, generate_id, vaga_existe, vaga_duplicada_por_titulo
 from .intelligence import analyze_vaga, pre_filter_vaga
 from .config import settings
 from .logger import log_info, log_error
@@ -65,7 +65,8 @@ def fetch_linkedin_jobs_http(ui_callback=None, roles=None, location_filter=None,
                 if inseridas >= MAX_VAGAS:
                     break
 
-                url = f"https://br.linkedin.com/jobs-guest/jobs/api/seeMoreJobPostings/search?keywords={cargo_com_remote}{geo_part}{f_c_param}&start={offset}"
+                # f_TPR=r432000 => ultimos 5 dias (5 * 24 * 3600 segundos)
+                url = f"https://br.linkedin.com/jobs-guest/jobs/api/seeMoreJobPostings/search?keywords={cargo_com_remote}{geo_part}{f_c_param}&f_TPR=r432000&start={offset}"
 
                 try:
                     res = session.get(url, headers=headers, timeout=15)
@@ -117,6 +118,11 @@ def fetch_linkedin_jobs_http(ui_callback=None, roles=None, location_filter=None,
 
                                 # Trava 1: memória
                                 if vaga_existe(vaga_id):
+                                    continue
+                                
+                                # Trava 1.5: Desduplicação por título e empresa (evitar repostagens da mesma vaga)
+                                if vaga_duplicada_por_titulo(title, company):
+                                    log(f"LinkedIn: [DUPLICADA] {title} na empresa {company} já foi processada.")
                                     continue
 
                                 # Trava 2: pré-filtro por título
