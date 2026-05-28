@@ -59,15 +59,22 @@ def fetch_linkedin_posts(ui_callback=None, roles=None):
                 page.goto(url, timeout=60000)
                 page.wait_for_load_state("domcontentloaded")
                 
-                # Espera as lisstinhas de post aparecerem
+                # Espera as listinhas de post aparecerem
                 try:
                     page.wait_for_selector(".search-results-container", timeout=10000)
                 except Exception:
                     # Pode ser que não tenha resultados ou caiu numa authwall
-                    if "authwall" in page.url or "login" in page.url:
+                    if "authwall" in page.url or "login" in page.url or "challenge" in page.url:
                         log("LinkedIn Posts: O cookie expirou ou o LinkedIn bloqueou. Rode o login de novo.")
                         break
-                    log("LinkedIn Posts: Nenhum post encontrado nesta pesquisa.")
+                    log("LinkedIn Posts: Nenhum post encontrado nesta pesquisa (ou layout mudou). Salvando debug...")
+                    try:
+                        os.makedirs("logs", exist_ok=True)
+                        page.screenshot(path="logs/debug_post_search.png")
+                        with open("logs/debug_post_search.html", "w", encoding="utf-8") as f:
+                            f.write(page.content())
+                    except Exception as e:
+                        log(f"LinkedIn Posts: Erro ao salvar debug: {e}")
                     continue
                 
                 # Scroll basico pra carregar conteudo (simular humano)
