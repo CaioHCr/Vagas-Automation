@@ -7,9 +7,22 @@ echo.
 echo Baixando a versao mais recente do sistema...
 curl -L -o atualizacao.zip https://github.com/CaioHCr/Vagas-Automation/archive/refs/heads/master.zip
 
+if not exist atualizacao.zip (
+    echo [ERRO] Nao foi possivel baixar a atualizacao. Verifique sua conexao com a internet.
+    pause
+    exit /b
+)
+
 echo.
 echo Extraindo os arquivos...
-powershell -command "Expand-Archive -Force atualizacao.zip -DestinationPath temp_update"
+mkdir temp_update 2>nul
+
+:: Tenta usar o tar nativo do Windows 10/11 primeiro
+tar -xf atualizacao.zip -C temp_update
+if %ERRORLEVEL% neq 0 (
+    echo [AVISO] Metodo tar falhou, tentando fallback via PowerShell...
+    powershell -command "Expand-Archive -Force atualizacao.zip -DestinationPath temp_update"
+)
 
 echo.
 echo Aplicando atualizacao (suas configuracoes serao mantidas)...
