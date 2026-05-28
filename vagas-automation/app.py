@@ -305,7 +305,7 @@ def _rodar_com_ui():
             "timestamp": datetime.now().strftime("%d/%m/%Y %H:%M")
         }
 
-        status.update(label="EXTRACAO CONCLUIDA -- todas as 3 fases finalizadas.", state="complete")
+        status.update(label="EXTRACAO CONCLUIDA -- todas as 4 fases finalizadas.", state="complete")
 
     st.session_state.running_extraction = False
     with open("_scheduler_last_run.txt", "w") as f:
