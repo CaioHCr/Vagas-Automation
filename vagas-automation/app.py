@@ -10,6 +10,7 @@ from dotenv import load_dotenv, set_key
 from core.database import get_all_vagas, get_visible_vagas, update_status, update_vaga_analysis, hide_all_vagas, clear_all_vagas, init_db
 from core.scraper_gupy import fetch_gupy_jobs
 from core.scraper_ln import fetch_linkedin_jobs_http
+from core.scraper_ln_posts import fetch_linkedin_posts
 from core.intelligence import analyze_vaga
 from core.notifier import enviar_resumo_email
 from core.logger import clear_logs
@@ -263,6 +264,10 @@ def _rodar_com_ui():
             status.write("[OK] Consultorias executivas concluido.")
         else:
             status.write("[AVISO] Nenhuma consultoria configurada em config/termos_busca.json.")
+            
+        status.update(label="Fase 4: Minerando vagas exclusivas em Posts do LinkedIn...", state="running")
+        fetch_linkedin_posts(ui_callback=update_log_ui, roles=roles)
+        status.write("[OK] Mineracao de posts concluida.")
 
         email_user = os.getenv("EMAIL_USUARIO", "")
         email_pass = os.getenv("EMAIL_SENHA_APP", "")
