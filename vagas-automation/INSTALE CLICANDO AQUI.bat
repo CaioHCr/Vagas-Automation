@@ -246,8 +246,13 @@ echo.
 echo   O painel sera aberto automaticamente a seguir.
 echo   Para abrir futuramente, basta clicar em "INICIE O PROGRAMA.bat".
 echo.
-echo   Pressione qualquer tecla para iniciar o app agora...
+echo   Antes disso, vamos configurar o seu acesso ao LinkedIn!
+echo   Pressione qualquer tecla para abrir a tela de login...
 pause
+call venv\Scripts\activate.bat
+python core\login_linkedin.py
+echo.
+echo   Agora sim! Iniciando o aplicativo...
 start "" "INICIE O PROGRAMA.bat"
 exit /b 0
 

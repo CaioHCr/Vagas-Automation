@@ -1,16 +1,15 @@
-import requests
 import json
 import os
 import time
 import re
 from urllib.parse import quote
-from bs4 import BeautifulSoup
+from playwright.sync_api import sync_playwright
 from .database import insert_vaga, generate_id, vaga_existe, vaga_duplicada_por_titulo
 from .intelligence import analyze_vaga, pre_filter_vaga
 from .config import settings
 from .logger import log_info, log_error
 
-MAX_POSTS = 10  # Limite rígido para evitar ban
+MAX_POSTS = 10  # Limite rigoroso para não alertar o LinkedIn
 
 def fetch_linkedin_posts(ui_callback=None, roles=None):
     def log(msg):
@@ -18,129 +17,128 @@ def fetch_linkedin_posts(ui_callback=None, roles=None):
         if ui_callback:
             ui_callback(msg)
 
-    log("Iniciando extração de Posts do LinkedIn...")
+    log("Iniciando mineracao ninja de Posts do LinkedIn via Playwright...")
     
     if not os.path.exists("cookies.json"):
         log("LinkedIn Posts: Arquivo cookies.json não encontrado. Abortando busca em posts.")
         return
 
-    session = requests.Session()
-    csrf_token = ""
-    with open("cookies.json", "r") as f:
-        try:
-            cookies = json.load(f).get('cookies', [])
-            for c in cookies:
-                session.cookies.set(c['name'], c['value'], domain=c['domain'])
-                if c['name'] == 'JSESSIONID':
-                    csrf_token = c['value'].replace('"', '')
-        except Exception:
-            log("LinkedIn Posts: Erro ao ler cookies.json.")
-            return
-
-    headers = {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-        "csrf-token": csrf_token,
-        "Accept": "application/vnd.linkedin.normalized+json+2.1",
-        "x-li-lang": "pt_BR",
-        "x-restli-protocol-version": "2.0.0"
-    }
-
     role_list = (roles or settings.CARGOS_ALVO).split(",")
     inseridas = 0
 
-    for role in role_list:
-        if inseridas >= MAX_POSTS:
-            break
-            
-        role = role.strip().strip('"').strip("'")
-        log(f"LinkedIn Posts: Buscando '{role}'...")
+    with sync_playwright() as p:
+        browser = p.chromium.launch(headless=True)
+        context = browser.new_context(
+            user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+        )
         
-        # Como a API GraphQL muda muito, uma abordagem mais estavel e buscar o HTML da pagina de pesquisa 
-        # e extrair o JSON embutido (que o LinkedIn usa para renderizar a pagina).
-        # Adicionamos "vaga" ou "contratando" para focar em vagas.
-        keyword = f'("vaga" OR "contratando" OR "hiring") "{role}"'
-        # datePosted=%22past-24h%22 restringe para posts recentes
-        url = f"https://www.linkedin.com/search/results/content/?datePosted=%22past-24h%22&keywords={quote(keyword)}&origin=FACETED_SEARCH"
-        
+        # Load cookies
         try:
-            res = session.get(url, headers={"User-Agent": headers["User-Agent"]}, timeout=15)
-            if res.status_code != 200:
-                log(f"LinkedIn Posts: Falha ao acessar busca (Status {res.status_code}).")
-                continue
+            with open("cookies.json", "r") as f:
+                cookies_data = json.load(f)
+                cookies = cookies_data.get('cookies', [])
+                context.add_cookies(cookies)
+        except Exception:
+            log("LinkedIn Posts: Falha ao carregar cookies.json.")
+            browser.close()
+            return
+
+        page = context.new_page()
+
+        for role in role_list:
+            if inseridas >= MAX_POSTS:
+                break
                 
-            soup = BeautifulSoup(res.text, 'html.parser')
-            codes = soup.find_all('code')
+            role = role.strip().strip('"').strip("'")
+            log(f"LinkedIn Posts: Carregando busca de posts para '{role}'...")
             
-            posts_found = []
+            keyword = f'("vaga" OR "contratando" OR "hiring") "{role}"'
+            url = f"https://www.linkedin.com/search/results/content/?datePosted=%22past-24h%22&keywords={quote(keyword)}&origin=FACETED_SEARCH"
             
-            for code in codes:
+            try:
+                page.goto(url, timeout=60000)
+                page.wait_for_load_state("domcontentloaded")
+                
+                # Espera as lisstinhas de post aparecerem
                 try:
-                    data = json.loads(code.text)
-                    # Procurar por objetos que parecam ser de conteudo/post
-                    if "included" in data:
-                        for item in data["included"]:
-                            if "commentary" in item and "text" in item["commentary"]:
-                                text = item["commentary"]["text"]["text"]
-                                urn = item.get("urn", "")
-                                
-                                # Tentar extrair o nome de quem postou
-                                author_name = "LinkedIn Post"
-                                
-                                if urn and "activity" in urn:
-                                    link = f"https://www.linkedin.com/feed/update/{urn}/"
-                                    if link not in [p['link'] for p in posts_found]:
-                                        posts_found.append({
-                                            "link": link,
-                                            "text": text,
-                                            "author": author_name
-                                        })
+                    page.wait_for_selector(".search-results-container", timeout=10000)
                 except Exception:
+                    # Pode ser que não tenha resultados ou caiu numa authwall
+                    if "authwall" in page.url or "login" in page.url:
+                        log("LinkedIn Posts: O cookie expirou ou o LinkedIn bloqueou. Rode o login de novo.")
+                        break
+                    log("LinkedIn Posts: Nenhum post encontrado nesta pesquisa.")
+                    continue
+                
+                # Scroll basico pra carregar conteudo (simular humano)
+                page.evaluate("window.scrollBy(0, window.innerHeight);")
+                time.sleep(2)
+                
+                posts = page.query_selector_all(".reusable-search__result-container")
+                if not posts:
+                    log(f"LinkedIn Posts: Nenhum post util encontrado para '{role}'.")
                     continue
                     
-            if not posts_found:
-                log(f"LinkedIn Posts: Nenhum post util encontrado para '{role}'.")
-                continue
+                log(f"LinkedIn Posts: {len(posts)} posts detectados na tela para '{role}'.")
                 
-            log(f"LinkedIn Posts: {len(posts_found)} posts brutos encontrados para '{role}'.")
+                for post in posts:
+                    if inseridas >= MAX_POSTS:
+                        break
+                        
+                    try:
+                        # Extrair o link do post (o urn)
+                        # Os links de post no search ficam em botoes ou "a" com href de update
+                        link_el = post.query_selector('a[href*="/feed/update/"]')
+                        link = link_el.get_attribute("href") if link_el else ""
+                        if not link:
+                            continue
+                            
+                        # Limpar a URL para id unico
+                        if "?" in link:
+                            link = link.split("?")[0]
+                        
+                        vaga_id = generate_id(link)
+                        if vaga_existe(vaga_id):
+                            continue
+                            
+                        # Extrair texto
+                        text_el = post.query_selector(".break-words")
+                        desc = text_el.inner_text() if text_el else ""
+                        
+                        # Extrair nome da empresa/pessoa
+                        author_el = post.query_selector(".app-aware-link span[dir='ltr']")
+                        company = author_el.inner_text() if author_el else "LinkedIn Post"
+                        
+                        title = f"Post: {role}"
+                        
+                        if not desc or pre_filter_vaga(desc):
+                            continue
+                            
+                        log("LinkedIn Posts: Analisando post...")
+                        analysis = analyze_vaga(link, fallback_desc=desc, descricao_direta=desc)
+                        score = analysis.get('score_aderencia', 0)
+                        
+                        oculta = 1 if score < 50 else 0
+                        status = "Excluir" if score < 50 else "Novas"
+                        
+                        insert_vaga({
+                            'id': vaga_id, 'cargo': title, 'empresa': company,
+                            'plataforma': 'LinkedIn Posts', 'score_aderencia': score,
+                            'justificativa': analysis.get('justificativa', ''),
+                            'status_candidatura': status, 'link': link,
+                            'descricao': analysis.get('descricao_usada', desc)[:5000], 'oculta': oculta
+                        })
+                        inseridas += 1
+                        log(f"LinkedIn Posts: [MATCH {score}%] Post inserido.")
+                    except Exception as e:
+                        continue
+                
+            except Exception as e:
+                log(f"LinkedIn Posts: Erro ao buscar: {str(e)}")
+                
+            time.sleep(3) # Pausa amigavel entre pesquisas
             
-            for post in posts_found:
-                if inseridas >= MAX_POSTS:
-                    break
-                    
-                vaga_id = generate_id(post["link"])
-                
-                if vaga_existe(vaga_id):
-                    continue
-                    
-                title = f"Post: {role}"
-                company = post["author"]
-                desc = post["text"]
-                
-                # pre_filter ignora se não for vaga, e as palavras no prompt já cuidam disso
-                if pre_filter_vaga(desc):
-                    continue
-                    
-                log(f"LinkedIn Posts: Analisando post...")
-                analysis = analyze_vaga(post["link"], fallback_desc=desc, descricao_direta=desc)
-                score = analysis.get('score_aderencia', 0)
-                
-                oculta = 1 if score < 50 else 0
-                status = "Excluir" if score < 50 else "Novas"
-                
-                insert_vaga({
-                    'id': vaga_id, 'cargo': title, 'empresa': company,
-                    'plataforma': 'LinkedIn Posts', 'score_aderencia': score,
-                    'justificativa': analysis.get('justificativa', ''),
-                    'status_candidatura': status, 'link': post["link"],
-                    'descricao': analysis.get('descricao_usada', desc)[:5000], 'oculta': oculta
-                })
-                inseridas += 1
-                log(f"LinkedIn Posts: [MATCH {score}%] Post inserido.")
-                
-        except Exception as e:
-            log(f"LinkedIn Posts: Erro critico: {str(e)}")
-            
-        time.sleep(3) # Pausa amigavel
+        browser.close()
         
     log(f"LinkedIn Posts: Finalizado. {inseridas} posts processados.")
 
