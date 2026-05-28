@@ -224,6 +224,7 @@ def _snapshot_counts():
         "ocultas": sum(1 for x in v if str(x.get("oculta")) == "1"),
         "linkedin": sum(1 for x in v if x.get("plataforma") == "LinkedIn"),
         "gupy": sum(1 for x in v if x.get("plataforma") == "Gupy"),
+        "posts": sum(1 for x in v if x.get("plataforma") == "LinkedIn Posts"),
     }
 
 # ---------------------------------------------------------------------------
@@ -280,6 +281,7 @@ def _rodar_com_ui():
         delta_ocult = _depois["ocultas"] - _antes["ocultas"]
         delta_ln = _depois["linkedin"] - _antes["linkedin"]
         delta_gupy = _depois["gupy"] - _antes["gupy"]
+        delta_posts = _depois["posts"] - _antes["posts"]
 
         email_status = "pulado (sem credenciais)"
         if email_user and email_pass:
@@ -298,6 +300,7 @@ def _rodar_com_ui():
             "delta_ocult": delta_ocult,
             "delta_ln": delta_ln,
             "delta_gupy": delta_gupy,
+            "delta_posts": delta_posts,
             "email": email_status,
             "timestamp": datetime.now().strftime("%d/%m/%Y %H:%M")
         }
@@ -354,6 +357,10 @@ if st.session_state.extraction_report:
             <div style="background:#0a0a0a;border:1px solid #222;border-radius:4px;padding:12px;text-align:center;">
                 <div style="font-size:1.6rem;font-weight:700;font-family:'JetBrains Mono',monospace;color:#aa66ff;">+{r['delta_gupy']}</div>
                 <div style="font-size:0.7rem;color:#888;text-transform:uppercase;margin-top:4px;">Gupy</div>
+            </div>
+            <div style="background:#0a0a0a;border:1px solid #222;border-radius:4px;padding:12px;text-align:center;">
+                <div style="font-size:1.6rem;font-weight:700;font-family:'JetBrains Mono',monospace;color:#ff44aa;">+{r.get('delta_posts', 0)}</div>
+                <div style="font-size:0.7rem;color:#888;text-transform:uppercase;margin-top:4px;">Posts</div>
             </div>
             <div style="background:#0a0a0a;border:1px solid #222;border-radius:4px;padding:12px;text-align:center;grid-column:1/-1;">
                 <div style="font-size:0.85rem;font-weight:700;font-family:'JetBrains Mono',monospace;color:{cor_email};">EMAIL: {r['email'].upper()}</div>
@@ -545,11 +552,20 @@ with tab_cards:
                 for v in vagas_list:
                     current = v['status_candidatura'] if v['status_candidatura'] in STATUS_OPTIONS else STATUS_OPTIONS[0]
                     idx = STATUS_OPTIONS.index(current) if current in STATUS_OPTIONS else 0
+                    
+                    plat = v.get("plataforma", "")
+                    plat_color = "#888"
+                    if plat == "LinkedIn": plat_color = "#0088ff"
+                    elif plat == "Gupy": plat_color = "#aa66ff"
+                    elif plat == "LinkedIn Posts": plat_color = "#ff44aa"
+                    
+                    tag_html = f'<span style="background: {plat_color}22; color: {plat_color}; padding: 2px 6px; border-radius: 4px; font-size: 0.65rem; margin-left: 8px; font-weight: bold; border: 1px solid {plat_color}44;">{plat.upper()}</span>' if plat else ""
+                    
                     st.markdown(
                         f'<div class="card" style="border-left:3px solid {c["border"]};">'
                         f'<div style="display:flex;justify-content:space-between;align-items:flex-start;">'
                         f'<div><div style="font-weight:700;font-size:0.85rem;color:#fff;">{v["cargo"]}</div>'
-                        f'<div style="font-size:0.78rem;color:#888;margin-top:2px;">{v["empresa"]}</div></div>'
+                        f'<div style="font-size:0.78rem;color:#888;margin-top:2px;">{v["empresa"]} {tag_html}</div></div>'
                         f'<span class="score-tag">{v["score_aderencia"]}% MATCH</span></div>',
                         unsafe_allow_html=True
                     )
