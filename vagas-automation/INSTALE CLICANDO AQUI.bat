@@ -249,8 +249,7 @@ echo.
 echo   Antes disso, vamos configurar o seu acesso ao LinkedIn!
 echo   Pressione qualquer tecla para abrir a tela de login...
 pause
-call venv\Scripts\activate.bat
-python core\login_linkedin.py
+.\venv\Scripts\python.exe core\login_linkedin.py
 echo.
 echo   Agora sim! Iniciando o aplicativo...
 start "" "INICIE O PROGRAMA.bat"
