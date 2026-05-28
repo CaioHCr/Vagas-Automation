@@ -7,18 +7,31 @@ def run():
     print("  LOGIN DO LINKEDIN (Para pegar posts atualizados)")
     print("=====================================================")
     print("O navegador vai abrir agora.")
-    print("ATENCAO: NAO USE O BOTAO 'Continuar com o Google'!")
-    print("O Google bloqueia navegadores automatizados.")
-    print("Digite seu e-mail e senha diretamente nos campos do LinkedIn.")
+    print("DICA: Se for usar o botao do Google e ele bloquear, use")
+    print("a opcao 'Esqueceu a senha?' no LinkedIn para criar uma.")
     print("Quando voce entrar e ver a pagina inicial (o feed), o sistema")
     print("vai salvar o seu login automaticamente e fechar o navegador.")
     print("=====================================================\n")
     
     with sync_playwright() as p:
-        browser = p.chromium.launch(
-            headless=False,
-            args=["--disable-blink-features=AutomationControlled"]
-        )
+        try:
+            browser = p.chromium.launch(
+                headless=False,
+                channel="chrome",
+                args=["--disable-blink-features=AutomationControlled"]
+            )
+        except Exception:
+            try:
+                browser = p.chromium.launch(
+                    headless=False,
+                    channel="msedge",
+                    args=["--disable-blink-features=AutomationControlled"]
+                )
+            except Exception:
+                browser = p.chromium.launch(
+                    headless=False,
+                    args=["--disable-blink-features=AutomationControlled"]
+                )
         context = browser.new_context()
         page = context.new_page()
         
