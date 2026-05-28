@@ -61,7 +61,7 @@ def fetch_linkedin_posts(ui_callback=None, roles=None):
                 
                 # Espera as listinhas de post aparecerem
                 try:
-                    page.wait_for_selector(".search-results-container", timeout=10000)
+                    page.wait_for_selector(".search-results-container, [data-testid='lazy-column']", timeout=10000)
                 except Exception:
                     # Pode ser que não tenha resultados ou caiu numa authwall
                     if "authwall" in page.url or "login" in page.url or "challenge" in page.url:
@@ -81,7 +81,7 @@ def fetch_linkedin_posts(ui_callback=None, roles=None):
                 page.evaluate("window.scrollBy(0, window.innerHeight);")
                 time.sleep(2)
                 
-                posts = page.query_selector_all(".reusable-search__result-container")
+                posts = page.query_selector_all(".reusable-search__result-container, [data-testid='lazy-column'] [role='listitem']")
                 if not posts:
                     log(f"LinkedIn Posts: Nenhum post util encontrado para '{role}'.")
                     continue
@@ -97,8 +97,18 @@ def fetch_linkedin_posts(ui_callback=None, roles=None):
                         # Os links de post no search ficam em botoes ou "a" com href de update
                         link_el = post.query_selector('a[href*="/feed/update/"]')
                         link = link_el.get_attribute("href") if link_el else ""
+                        
                         if not link:
-                            continue
+                            html_content = post.inner_html()
+                            share_match = re.search(r'shareId=(\d+)', html_content)
+                            if share_match:
+                                link = f"https://www.linkedin.com/feed/update/urn:li:share:{share_match.group(1)}/"
+                            else:
+                                act_match = re.search(r'activityUrn.*?(\d+)', html_content)
+                                if act_match:
+                                    link = f"https://www.linkedin.com/feed/update/urn:li:activity:{act_match.group(1)}/"
+                                else:
+                                    continue
                             
                         # Limpar a URL para id unico
                         if "?" in link:
@@ -109,12 +119,18 @@ def fetch_linkedin_posts(ui_callback=None, roles=None):
                             continue
                             
                         # Extrair texto
-                        text_el = post.query_selector(".break-words")
+                        text_el = post.query_selector(".break-words, [data-testid='expandable-text-box']")
                         desc = text_el.inner_text() if text_el else ""
                         
                         # Extrair nome da empresa/pessoa
                         author_el = post.query_selector(".app-aware-link span[dir='ltr']")
-                        company = author_el.inner_text() if author_el else "LinkedIn Post"
+                        company = author_el.inner_text() if author_el else ""
+                        if not company:
+                            author_a = post.query_selector('a[href*="/company/"] [aria-label], a[href*="/in/"] [aria-label]')
+                            if author_a:
+                                company = author_a.get_attribute("aria-label").strip()
+                        if not company:
+                            company = "LinkedIn Post"
                         
                         title = f"Post: {role}"
                         
